@@ -1,0 +1,7 @@
+*.elc
+*~
+.emacs.d/session*
+*.pyc
+*.pyo
+\#*\#
+*.DS_Store

@@ -1,6 +1,9 @@
 from __future__ import unicode_literals
 
 
+class BogusQuery(Exception):
+    pass
+
 """
 [ WITH [ RECURSIVE ] with_query [, ...] ]
 SELECT [ ALL | DISTINCT [ ON ( expression [, ...] ) ] ]
@@ -38,9 +41,16 @@ TABLE { [ ONLY ] table_name [ * ] | with_query_name }
 
 
 class Select(object):
-    def __init__(self, table=None):
+    def __init__(self, table):
         self.table = table
         self.binds = {}
+
+        self.wheres = []
+
+    def where(self, *args, **kw):
+        if args and kw:
+            raise BogusQuery('You can\'t have both *args and **kw in a .where')
+        self.wheres.append(where)
 
 """
 UPDATE [ ONLY ] table [ [ AS ] alias ]
