@@ -127,11 +127,15 @@ class SELECT(object):
     def __init__(self, *args):
         self.parent = None
         self.chain = [(QUERY_TYPE, (SELECT_QT,))]
+        self.binds = {}
 
         for stmt in args:
             self.chain.append((COLUMN, (stmt,)))
 
         self._query = None
+
+    def bind(self, **binds):
+        self.binds.update(binds)
 
     def child(self):
         s = SELECT()
