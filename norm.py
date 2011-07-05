@@ -3,12 +3,14 @@ from __future__ import unicode_literals
 QUERY_TYPE = b'qt'
 COLUMN = b'c'
 FROM = b'f'
-JOIN = b'j'
 WHERE = b'w'
+HAVING = b'h'
 GROUP_BY = b'gb'
+ORDER_BY = b'ob'
 LIMIT = b'l'
 OFFSET = b'os'
 EXTRA = b'ex'
+TABLE= b't'
 
 SELECT_QT = b's'
 UPDATE_QT = b'u'
@@ -22,17 +24,19 @@ class BogusQuery(Exception):
 
 
 class SQLCompiler(object):
-    def __init__(self, chain):
+    def __init__(self, chain, query_type):
         self.chain = chain
-
-        self.query_type = None
+        self.query_type = query_type
+        self.table = None
         self.columns = []
         self.from_ = []
         self.where = []
+        self.having = None
         self.group_by = None
+        self.order_by = None
         self.limit = None
         self.offset = None
-        self.tail = None
+        self.extra = []
 
     def set_query_type(self, query_type):
         self.query_type = query_type
@@ -68,20 +72,59 @@ class SQLCompiler(object):
     def compile_where(self):
         return ' WHERE ' + (' AND' + SEP).join(self.where)
 
+    def set_having(self, having_expr):
+        self.having = having_expr
+
     def compile_having(self):
-        pass
+        if self.having is None:
+            return None
+        return 'HAVING ' + self.having
+
+    def set_group_by(self, group_by_expr):
+        self.group_by = group_by_expr
+
+    def compile_group_by(self):
+        if self.group_by is None:
+            return None
+        return 'GROUP BY ' + self.group_by
+
+    def set_order_by(self, order_by_expr):
+        self.order_by = order_by_expr
 
     def compile_order_by(self):
-        pass
+        if self.order_by is None:
+            return None
+        return 'ORDER BY ' + self.order_by
+
+    def set_limit(self, limit_expr):
+        self.limit = limit_expr
 
     def compile_limit(self):
-        pass
+        if self.limit is None:
+            return None
+        return ' LIMIT ' + self.limit
+
+    def set_offset(self, offset_expr):
+        self.offset = offset_expr
 
     def compile_offset(self):
-        pass
+        if self.offset is None:
+            return None
+        return 'OFFSET ' + self.offset
+
+    def add_extra(self, extra_expr):
+        self.extra.append(extra_expr)
 
     def compile_extra(self):
-        pass
+        if not self.extra:
+            return None
+        return '\n'.join(self.extra) if self.extra is not None else None
+
+    def set_table(self, table_expr):
+        self.table = table_expr
+
+    def compile_table(self):
+        return 'UPDATE ' + self.table
 
     def compile(self):
         for op, options in self.chain:
@@ -91,12 +134,18 @@ class SQLCompiler(object):
                 self.add_where(*options)
             elif op == FROM:
                 self.add_from(*options)
-            elif op == QUERY_TYPE:
-                self.set_query_type(*options)
+            elif op == TABLE:
+                self.set_table(*options)
             elif op == GROUP_BY:
-                self.add_group_by(*options)
+                self.set_group_by(*options)
+            elif op == ORDER_BY:
+                self.set_order_by(*options)
             elif op == LIMIT:
                 self.set_limit(*options)
+            elif op == OFFSET:
+                self.set_offset(*options)
+            elif op == HAVING:
+                self.set_having(*options)
             elif op == EXTRA:
                 self.add_extra(*options)
             else:
@@ -107,6 +156,7 @@ class SQLCompiler(object):
                 self.compile_columns(),
                 self.compile_from(),
                 self.compile_where(),
+                self.compile_group_by(),
                 self.compile_having(),
                 self.compile_order_by(),
                 self.compile_limit(),
@@ -114,7 +164,7 @@ class SQLCompiler(object):
                 self.compile_extra()]
         elif self.query_type == UPDATE_QT:
             parts = [
-                self.compile_update(),
+                self.compile_table(),
                 self.compile_set(),
                 self.compile_from(),
                 self.compile_where(),
@@ -123,15 +173,13 @@ class SQLCompiler(object):
         return '\n'.join(part for part in parts if part is not None) + ';'
 
 
-class SELECT(object):
-    def __init__(self, *args):
+class Query(object):
+    query_type = None
+
+    def __init__(self):
         self.parent = None
-        self.chain = [(QUERY_TYPE, (SELECT_QT,))]
+        self.chain = []
         self._binds = {}
-
-        for stmt in args:
-            self.chain.append((COLUMN, (stmt,)))
-
         self._query = None
 
     @property
@@ -149,14 +197,33 @@ class SELECT(object):
         return s
 
     def child(self):
-        s = SELECT()
+        s = self.__class__()
         s.parent = self
         return s
 
-    def SELECT(self, *args):
+    def build_chain(self):
+        parent_chain = self.parent.build_chain() if self.parent else []
+        return parent_chain + self.chain
+
+    @property
+    def query(self):
+        if self._query is None:
+            comp = SQLCompiler(self.build_chain(), self.query_type)
+            self._query = comp.compile()
+        return self._query
+
+
+class _SELECT_UPDATE(Query):
+    def WHERE(self, *args, **kw):
+        # TODO: this is an injection waiting to happen.
         s = self.child()
         for stmt in args:
-            s.chain.append((COLUMN, (stmt,)))
+            s.chain.append((WHERE, (stmt,)))
+        for column_name, value in kw.iteritems():
+            bind_val_name = 'norm_gen_bind_%s' % len(self.binds)
+            self._binds[bind_val_name] = value
+            expr = unicode(column_name) + ' = %(' + bind_val_name + ')s'
+            s.chain.append((WHERE, (expr,)))
         return s
 
     def FROM(self, *args):
@@ -181,58 +248,65 @@ class SELECT(object):
         s.chain.append((FROM, (stmt, True, op, criteria)))
         return s
 
-    def WHERE(self, *args, **kw):
-        # TODO: this is an injection waiting to happen.
+
+class SELECT(_SELECT_UPDATE):
+    query_type = SELECT_QT
+
+    def __init__(self, *args):
+        super(SELECT, self).__init__()
+
+        for stmt in args:
+            self.chain.append((COLUMN, (stmt,)))
+
+    def SELECT(self, *args):
         s = self.child()
         for stmt in args:
-            s.chain.append((WHERE, (stmt,)))
-        for column_name, value in kw.iteritems():
-            bind_val_name = 'norm_gen_bind_%s' % len(self.binds)
-            self._binds[bind_val_name] = value
-            expr = unicode(column_name) + ' = %(' + bind_val_name + ')s'
-            s.chain.append((WHERE, (expr,)))
+            s.chain.append((COLUMN, (stmt,)))
         return s
 
-    def HAVING(self, *args):
-        pass
+    def HAVING(self, stmt):
+        s = self.child()
+        s.chain.append((HAVING, (stmt,)))
+        return s
 
-    def ORDER_BY(self, *args):
-        pass
+    def ORDER_BY(self, stmt):
+        s = self.child()
+        s.chain.append((ORDER_BY, (stmt,)))
+        return s
 
-    def LIMIT(self, limit):
-        pass
+    def GROUP_BY(self, stmt):
+        s = self.child()
+        s.chain.append((GROUP_BY, (stmt,)))
+        return s
 
-    def OFFSET(self, offset):
-        pass
+    def LIMIT(self, stmt):
+        if isinstance(stmt, (int, long)):
+            stmt = unicode(stmt)
+        s = self.child()
+        s.chain.append((LIMIT, (stmt,)))
+        return s
 
-    def EXTRA(self, *args):
-        pass
-
-    def build_chain(self):
-        parent_chain = self.parent.build_chain() if self.parent else []
-        return parent_chain + self.chain
-
-    @property
-    def query(self):
-        if self._query is None:
-            comp = SQLCompiler(self.build_chain())
-            self._query = comp.compile()
-        return self._query
+    def OFFSET(self, stmt):
+        if isinstance(stmt, (int, long)):
+            stmt = unicode(stmt)
+        s = self.child()
+        s.chain.append((OFFSET, (stmt,)))
+        return s
 
 
-class UPDATE(SELECT):
+class UPDATE(_SELECT_UPDATE):
+    query_type = UPDATE_QT
+
     def __init__(self, table):
-        self.table = table
-        self.parent = None
+        super(UPDATE, self).__init__()
+
+        self.chain.append((TABLE, (table,)))
 
     def SET(self, *args):
         return self
 
-    @property
-    def query(self):
-        return ''
-
-
+    def EXTRA(self, *args):
+        pass
 
 """
 [ WITH [ RECURSIVE ] with_query [, ...] ]
