@@ -75,6 +75,39 @@ def test_all_select_methods():
     assert s.query == expected
 
 
+def test_overwriting_select_methods_overwrite():
+    s = (SELECT("tbl1.column1 AS col1")
+         .FROM("table1 AS tbl1")
+         .WHERE("tbl1.col2 = 'testval'")
+         .JOIN("table2", ON="table2.blah = tbl1.col2")
+         .SELECT("table2.blah")
+         .HAVING("count(*) > BAD")
+         .HAVING("count(*) > 5")
+         .GROUP_BY("THIS IS BAD")
+         .GROUP_BY("table2.blah, col1")
+         .ORDER_BY("STILL BAD")
+         .ORDER_BY("count(*)")
+         .LIMIT('no way')
+         .LIMIT(5)
+         .OFFSET('should not see this')
+         .OFFSET(3))
+
+    expected = '\n'.join([
+            "SELECT tbl1.column1 AS col1,",
+            "       table2.blah",
+            "  FROM table1 AS tbl1",
+            "  JOIN table2",
+            "       ON table2.blah = tbl1.col2",
+            " WHERE tbl1.col2 = 'testval'",
+            "GROUP BY table2.blah, col1",
+            "HAVING count(*) > 5",
+            "ORDER BY count(*)",
+            " LIMIT 5",
+            "OFFSET 3;"])
+
+    assert s.query == expected
+
+
 def test_binds():
     s1 = (SELECT("tbl1.column1 AS col1")
           .FROM("table1 AS tbl1")
