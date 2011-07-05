@@ -47,6 +47,69 @@ def test_multiple_where():
     assert s.query == expected
 
 
+def test_binds():
+    s1 = (SELECT("tbl1.column1 AS col1")
+          .FROM("table1 AS tbl1")
+          .WHERE("tbl1.col2 = 'testval'")
+          .WHERE("tbl1.col3 = %(bind1)s")
+          .bind(bind1='bind1value'))
+
+    expected1 = '\n'.join([
+            "SELECT tbl1.column1 AS col1",
+            "  FROM table1 AS tbl1",
+            " WHERE tbl1.col2 = 'testval' AND",
+            "       tbl1.col3 = %(bind1)s;"])
+
+    assert s1.query == expected1
+    assert s1.binds == {'bind1': 'bind1value'}
+
+
+def test_gen_binds():
+    s1 = (SELECT("tbl1.column1 AS col1")
+          .FROM("table1 AS tbl1")
+          .WHERE(id=1)
+          .WHERE(name='bossanova')
+          .WHERE(occupation='rascal', salary=None)
+          # This last line makes testing a bit complex, there
+          #   is no way to predict reliably what order those two
+          #   constraints will come out in.
+          .WHERE("tbl1.col3 = %(bind1)s")
+          .bind(bind1='bind1value'))
+
+    expected1_v1 = '\n'.join([
+            "SELECT tbl1.column1 AS col1",
+            "  FROM table1 AS tbl1",
+            " WHERE id = %(norm_gen_bind_0)s AND",
+            "       name = %(norm_gen_bind_1)s AND",
+            "       occupation = %(norm_gen_bind_2)s AND",
+            "       salary = %(norm_gen_bind_3)s AND",
+            "       tbl1.col3 = %(bind1)s;"])
+
+    expected1_v2 = '\n'.join([
+            "SELECT tbl1.column1 AS col1",
+            "  FROM table1 AS tbl1",
+            " WHERE id = %(norm_gen_bind_0)s AND",
+            "       name = %(norm_gen_bind_1)s AND",
+            "       salary = %(norm_gen_bind_2)s AND",
+            "       occupation = %(norm_gen_bind_3)s AND",
+            "       tbl1.col3 = %(bind1)s;"])
+    if s1.query.find('salary') > s1.query.find('occupation'):
+        assert s1.query == expected1_v1
+        assert s1.binds == {'bind1': 'bind1value',
+                            'norm_gen_bind_0': 1,
+                            'norm_gen_bind_1': 'bossanova',
+                            'norm_gen_bind_2': 'rascal',
+                            'norm_gen_bind_3': None}
+
+    else:
+        assert s1.query == expected1_v2
+        assert s1.binds == {'bind1': 'bind1value',
+                            'norm_gen_bind_0': 1,
+                            'norm_gen_bind_1': 'bossanova',
+                            'norm_gen_bind_3': 'rascal',
+                            'norm_gen_bind_2': None}
+
+
 def test_generative_query():
     s1 = (SELECT("tbl1.column1 AS col1")
          .FROM("table1 AS tbl1")
@@ -55,9 +118,9 @@ def test_generative_query():
 
     s2 = s1.WHERE("tbl1.col4 = 'otherother'")
 
-    s3 = s2.JOIN("table2 AS tbl2", USING="somecol")
+    s3 = s2.JOIN("table2 AS tbl2", USING="somecol").bind(val='whatevs')
     s4 = s3.JOIN("table3 AS tbl3", ON="tbl3.colx = tbl2.coly")
-    s5 = s4.SELECT("tbl3.whatever AS whatever")
+    s5 = s4.SELECT("tbl3.whatever AS whatever").bind(test='test2')
 
     expected1 = '\n'.join([
             "SELECT tbl1.column1 AS col1",
@@ -105,10 +168,15 @@ def test_generative_query():
             "       tbl1.col4 = 'otherother';"])
 
     assert s5.query == expected5
+    assert s5.binds == {'test': 'test2', 'val': 'whatevs'}
     assert s4.query == expected4
+    assert s4.binds == {'val': 'whatevs'}
     assert s3.query == expected3
+    assert s3.binds == {'val': 'whatevs'}
     assert s2.query == expected2
+    assert s2.binds == {}
     assert s1.query == expected1
+    assert s1.binds == {}
 
 
 def test_simple_update():

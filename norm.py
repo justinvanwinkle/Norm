@@ -127,15 +127,26 @@ class SELECT(object):
     def __init__(self, *args):
         self.parent = None
         self.chain = [(QUERY_TYPE, (SELECT_QT,))]
-        self.binds = {}
+        self._binds = {}
 
         for stmt in args:
             self.chain.append((COLUMN, (stmt,)))
 
         self._query = None
 
+    @property
+    def binds(self):
+        binds = {}
+        if self.parent is not None:
+            binds.update(self.parent.binds)
+        binds.update(self._binds)
+
+        return binds
+
     def bind(self, **binds):
-        self.binds.update(binds)
+        s = self.child()
+        s._binds.update(binds)
+        return s
 
     def child(self):
         s = SELECT()
@@ -170,10 +181,16 @@ class SELECT(object):
         s.chain.append((FROM, (stmt, True, op, criteria)))
         return s
 
-    def WHERE(self, *args):
+    def WHERE(self, *args, **kw):
+        # TODO: this is an injection waiting to happen.
         s = self.child()
         for stmt in args:
             s.chain.append((WHERE, (stmt,)))
+        for column_name, value in kw.iteritems():
+            bind_val_name = 'norm_gen_bind_%s' % len(self.binds)
+            self._binds[bind_val_name] = value
+            expr = unicode(column_name) + ' = %(' + bind_val_name + ')s'
+            s.chain.append((WHERE, (expr,)))
         return s
 
     def HAVING(self, *args):
@@ -203,7 +220,7 @@ class SELECT(object):
         return self._query
 
 
-class UPDATE(object):
+class UPDATE(SELECT):
     def __init__(self, table):
         self.table = table
         self.parent = None
