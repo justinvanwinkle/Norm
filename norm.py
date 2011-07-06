@@ -10,7 +10,8 @@ ORDER_BY = b'ob'
 LIMIT = b'l'
 OFFSET = b'os'
 EXTRA = b'ex'
-TABLE= b't'
+TABLE = b't'
+SET = b's'
 
 SELECT_QT = b's'
 UPDATE_QT = b'u'
@@ -36,6 +37,7 @@ class SQLCompiler(object):
         self.order_by = None
         self.limit = None
         self.offset = None
+        self.set = []
         self.extra = []
 
     def set_query_type(self, query_type):
@@ -126,6 +128,14 @@ class SQLCompiler(object):
     def compile_table(self):
         return 'UPDATE ' + self.table
 
+    def add_set(self, set_expr):
+        self.set.append(set_expr)
+
+    def compile_set(self):
+        if not self.set:
+            return None
+        return '   SET ' + SEP.join(self.set)
+
     def compile(self):
         for op, options in self.chain:
             if op == COLUMN:
@@ -136,6 +146,8 @@ class SQLCompiler(object):
                 self.add_from(*options)
             elif op == TABLE:
                 self.set_table(*options)
+            elif op == SET:
+                self.add_set(*options)
             elif op == GROUP_BY:
                 self.set_group_by(*options)
             elif op == ORDER_BY:
@@ -215,7 +227,9 @@ class Query(object):
 
 class _SELECT_UPDATE(Query):
     def WHERE(self, *args, **kw):
-        # TODO: this is an injection waiting to happen.
+        # TODO: this is an injection waiting to happen.  The values are fine,
+        #  but the column names are not escaped in any way and doing so doesn't
+        #  seem possible.
         s = self.child()
         for stmt in args:
             s.chain.append((WHERE, (stmt,)))
@@ -302,8 +316,17 @@ class UPDATE(_SELECT_UPDATE):
 
         self.chain.append((TABLE, (table,)))
 
-    def SET(self, *args):
-        return self
+    def SET(self, *args, **kw):
+        s = self.child()
+        for stmt in args:
+            self.chain.append((SET, (stmt,)))
+
+        for column_name, value in kw.iteritems():
+            bind_name = column_name + '_bind'
+            self._binds[bind_name] = value
+            expr = unicode(column_name) + ' = %(' + bind_name + ')s'
+            s.chain.append((WHERE, (expr,)))
+        return s
 
     def EXTRA(self, *args):
         pass
