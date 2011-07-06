@@ -66,12 +66,16 @@ class SQLCompiler(object):
                 self.from_[-1] += '\n       ' + op + ' ' + criteria
 
     def compile_from(self):
+        if not self.from_:
+            return None
         return '  FROM ' + SEP.join(self.from_)
 
     def add_where(self, where_expr):
         self.where.append(where_expr)
 
     def compile_where(self):
+        if not self.where:
+            return None
         return ' WHERE ' + (' AND' + SEP).join(self.where)
 
     def set_having(self, having_expr):
@@ -134,7 +138,7 @@ class SQLCompiler(object):
     def compile_set(self):
         if not self.set:
             return None
-        return '   SET ' + SEP.join(self.set)
+        return '   SET ' + (',' + SEP).join(self.set)
 
     def compile(self):
         for op, options in self.chain:
@@ -180,7 +184,7 @@ class SQLCompiler(object):
                 self.compile_set(),
                 self.compile_from(),
                 self.compile_where(),
-                self.compile_returning()]
+                self.compile_extra()]
 
         return '\n'.join(part for part in parts if part is not None) + ';'
 
@@ -311,10 +315,11 @@ class SELECT(_SELECT_UPDATE):
 class UPDATE(_SELECT_UPDATE):
     query_type = UPDATE_QT
 
-    def __init__(self, table):
+    def __init__(self, table=None):
         super(UPDATE, self).__init__()
 
-        self.chain.append((TABLE, (table,)))
+        if table is not None:
+            self.chain.append((TABLE, (table,)))
 
     def SET(self, *args, **kw):
         s = self.child()
@@ -325,7 +330,7 @@ class UPDATE(_SELECT_UPDATE):
             bind_name = column_name + '_bind'
             self._binds[bind_name] = value
             expr = unicode(column_name) + ' = %(' + bind_name + ')s'
-            s.chain.append((WHERE, (expr,)))
+            s.chain.append((SET, (expr,)))
         return s
 
     def EXTRA(self, *args):

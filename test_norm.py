@@ -243,10 +243,41 @@ def test_generative_query():
 def test_simple_update():
     u = (UPDATE("table1")
          .SET("col1 = 'test'")
-         .SET("col2 = 'test2"))
+         .SET("col2 = 'test2'"))
     expected = '\n'.join([
             "UPDATE table1",
             "   SET col1 = 'test',",
             "       col2 = 'test2';"])
 
     assert u.query == expected
+
+
+def test_update_one_row():
+    u = (UPDATE("table1")
+         .SET("col1 = 'test'")
+         .SET("col2 = 'test2'")
+         .WHERE(id=5))
+    expected = '\n'.join([
+            "UPDATE table1",
+            "   SET col1 = 'test',",
+            "       col2 = 'test2'",
+            " WHERE id = %(norm_gen_bind_0)s;"])
+
+    assert u.query == expected
+    assert u.binds == {'norm_gen_bind_0': 5}
+
+
+def test_named_arg_update():
+    u = (UPDATE("table1")
+         .SET(col1='test')
+         .SET("col2 = 'test2'")
+         .WHERE(id=5))
+    expected = '\n'.join([
+            "UPDATE table1",
+            "   SET col1 = %(col1_bind)s,",
+            "       col2 = 'test2'",
+            " WHERE id = %(norm_gen_bind_1)s;"])
+
+    assert u.query == expected
+    assert u.binds == {'col1_bind': 'test',
+                       'norm_gen_bind_1': 5}
