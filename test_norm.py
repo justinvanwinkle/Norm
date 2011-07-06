@@ -125,7 +125,7 @@ def test_binds():
     assert s1.binds == {'bind1': 'bind1value'}
 
 
-def test_gen_binds():
+def test_generate_binds():
     s1 = (SELECT("tbl1.column1 AS col1")
           .FROM("table1 AS tbl1")
           .WHERE(id=1)
@@ -140,35 +140,35 @@ def test_gen_binds():
     expected1_v1 = '\n'.join([
             "SELECT tbl1.column1 AS col1",
             "  FROM table1 AS tbl1",
-            " WHERE id = %(norm_gen_bind_0)s AND",
-            "       name = %(norm_gen_bind_1)s AND",
-            "       occupation = %(norm_gen_bind_2)s AND",
-            "       salary = %(norm_gen_bind_3)s AND",
+            " WHERE id = %(id_bind_0)s AND",
+            "       name = %(name_bind_1)s AND",
+            "       occupation = %(occupation_bind_2)s AND",
+            "       salary = %(salary_bind_3)s AND",
             "       tbl1.col3 = %(bind1)s;"])
 
     expected1_v2 = '\n'.join([
             "SELECT tbl1.column1 AS col1",
             "  FROM table1 AS tbl1",
-            " WHERE id = %(norm_gen_bind_0)s AND",
-            "       name = %(norm_gen_bind_1)s AND",
-            "       salary = %(norm_gen_bind_2)s AND",
-            "       occupation = %(norm_gen_bind_3)s AND",
+            " WHERE id = %(id_bind_0)s AND",
+            "       name = %(name_bind_1)s AND",
+            "       salary = %(salary_bind_2)s AND",
+            "       occupation = %(occupation_bind_3)s AND",
             "       tbl1.col3 = %(bind1)s;"])
     if s1.query.find('salary') > s1.query.find('occupation'):
         assert s1.query == expected1_v1
         assert s1.binds == {'bind1': 'bind1value',
-                            'norm_gen_bind_0': 1,
-                            'norm_gen_bind_1': 'bossanova',
-                            'norm_gen_bind_2': 'rascal',
-                            'norm_gen_bind_3': None}
+                            'id_bind_0': 1,
+                            'name_bind_1': 'bossanova',
+                            'occupation_bind_2': 'rascal',
+                            'salary_bind_3': None}
 
     else:
         assert s1.query == expected1_v2
         assert s1.binds == {'bind1': 'bind1value',
-                            'norm_gen_bind_0': 1,
-                            'norm_gen_bind_1': 'bossanova',
-                            'norm_gen_bind_3': 'rascal',
-                            'norm_gen_bind_2': None}
+                            'id_bind_0': 1,
+                            'name_bind_1': 'bossanova',
+                            'occupation_bind_3': 'rascal',
+                            'salary_bind_2': None}
 
 
 def test_generative_query():
@@ -181,7 +181,7 @@ def test_generative_query():
 
     s3 = s2.JOIN("table2 AS tbl2", USING="somecol").bind(val='whatevs')
     s4 = s3.JOIN("table3 AS tbl3", ON="tbl3.colx = tbl2.coly")
-    s5 = s4.SELECT("tbl3.whatever AS whatever").bind(test='test2')
+    s5 = s4.SELECT("tbl3.whatever AS whatever").bind(test='test2', val='nope')
 
     expected1 = '\n'.join([
             "SELECT tbl1.column1 AS col1",
@@ -229,7 +229,7 @@ def test_generative_query():
             "       tbl1.col4 = 'otherother';"])
 
     assert s5.query == expected5
-    assert s5.binds == {'test': 'test2', 'val': 'whatevs'}
+    assert s5.binds == {'test': 'test2', 'val': 'nope'}
     assert s4.query == expected4
     assert s4.binds == {'val': 'whatevs'}
     assert s3.query == expected3
@@ -261,10 +261,10 @@ def test_update_one_row():
             "UPDATE table1",
             "   SET col1 = 'test',",
             "       col2 = 'test2'",
-            " WHERE id = %(norm_gen_bind_0)s;"])
+            " WHERE id = %(id_bind_0)s;"])
 
     assert u.query == expected
-    assert u.binds == {'norm_gen_bind_0': 5}
+    assert u.binds == {'id_bind_0': 5}
 
 
 def test_named_arg_update():
@@ -276,8 +276,8 @@ def test_named_arg_update():
             "UPDATE table1",
             "   SET col1 = %(col1_bind)s,",
             "       col2 = 'test2'",
-            " WHERE id = %(norm_gen_bind_1)s;"])
+            " WHERE id = %(id_bind_1)s;"])
 
     assert u.query == expected
     assert u.binds == {'col1_bind': 'test',
-                       'norm_gen_bind_1': 5}
+                       'id_bind_1': 5}

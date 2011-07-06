@@ -238,9 +238,10 @@ class _SELECT_UPDATE(Query):
         for stmt in args:
             s.chain.append((WHERE, (stmt,)))
         for column_name, value in kw.iteritems():
-            bind_val_name = 'norm_gen_bind_%s' % len(self.binds)
+            column_name = unicode(column_name)
+            bind_val_name = '%s_bind_%s' % (column_name, len(self.binds))
             self._binds[bind_val_name] = value
-            expr = unicode(column_name) + ' = %(' + bind_val_name + ')s'
+            expr = column_name + ' = %(' + bind_val_name + ')s'
             s.chain.append((WHERE, (expr,)))
         return s
 
@@ -333,6 +334,9 @@ class UPDATE(_SELECT_UPDATE):
             s.chain.append((SET, (expr,)))
         return s
 
+    def RETURNING(self, *args):
+        pass
+
     def EXTRA(self, *args):
         pass
 
@@ -370,9 +374,6 @@ and with_query is:
 
 TABLE { [ ONLY ] table_name [ * ] | with_query_name }
 """
-
-
-
 
 """
 UPDATE [ ONLY ] table [ [ AS ] alias ]
