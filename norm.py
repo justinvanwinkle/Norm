@@ -231,9 +231,7 @@ class Query(object):
 
 class _SELECT_UPDATE(Query):
     def WHERE(self, *args, **kw):
-        # TODO: this is an injection waiting to happen.  The values are fine,
-        #  but the column names are not escaped in any way and doing so doesn't
-        #  seem possible.
+        # TODO: handle OR
         s = self.child()
         for stmt in args:
             s.chain.append((WHERE, (stmt,)))
