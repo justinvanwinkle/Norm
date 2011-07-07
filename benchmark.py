@@ -21,33 +21,54 @@ addresses = Table(
 
 def sqlalchemy_bench():
     s = select([users, addresses], users.c.id == addresses.c.user_id)
+    s = s.where(users.c.id > 1)
+    s = s.where(users.c.name.startswith('Justin'))
     return str(s)
 
 
 def norm_bench():
-    s = (SELECT('users.id',
-                'users.name',
+    s = (SELECT('users.name',
                 'users.fullname',
-                'addresses.id',
-                'addresses.user_id',
                 'addresses.email_address')
          .FROM('users')
          .JOIN('addresses', ON='users.id = addresses.user_id'))
 
+    s = s.WHERE('users.id > %(id)s').bind(id=1)
+    s = s.WHERE("users.name LIKE %(name)s").bind(name='Justin%')
+
     return s.query
 
 
-def time_it(f):
+def raw_bench():
+    s = """SELECT users.name,
+       users.fullname,
+       addresses.email_address
+  FROM users
+  JOIN addresses
+       ON users.id = addresses.user_id
+ WHERE users.id > %(id)s AND
+       users.name LIKE %(name)s;"""
+    return s
+
+
+def time_it(f, last=None):
+    #print f()
     start = time.time()
-    for x in xrange(50000):
+    for x in xrange(10000):
         f()
 
-    return time.time() - start
+    elapsed = time.time() - start
+    faster = ''
+    if last is not None:
+        faster = '%.1f' % (last / elapsed)
+    print '%s %.4f, %s' % (f.__name__, elapsed, faster)
+    return elapsed
 
 
 def run_benchmark():
-    print 'SQLAlchemy', time_it(sqlalchemy_bench)
-    print 'Norm', time_it(norm_bench)
+    sqla_time = time_it(sqlalchemy_bench)
+    norm_time = time_it(norm_bench, sqla_time)
+    time_it(raw_bench, norm_time)
 
 
 if __name__ == '__main__':
