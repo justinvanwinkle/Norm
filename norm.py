@@ -19,6 +19,8 @@ INSERT_QT = b'i'
 
 SEP = '\n       '
 COLUMN_SEP = ',' + SEP
+INSERT_COLUMNS_SEP = ',\n   '
+INSERT_VALUES_SEP = ',\n          '
 
 
 class BogusQuery(Exception):
@@ -256,6 +258,62 @@ class UPDATE(_SELECT_UPDATE):
 
 
 class INSERT(object):
-    def __init__(self, table):
+    def __init__(self, table, data=None, columns=None, default=None):
         self.table = table
-        self.binds = {}
+        self.data = data
+        self._columns = columns
+        self.default = default
+
+    @property
+    def binds(self):
+        binds = {}
+        if self.multi_data:
+            for index, d in enumerate(self.data):
+                pass
+        return self.data
+
+    @property
+    def multi_data(self):
+        if hasattr(self.data, 'iterkeys'):
+            return False
+        return True
+
+    @property
+    def columns(self):
+        if self._columns is None:
+            if self.data is None:
+                return None
+            if not self.multi_data:
+                return sorted([key for key in self.data])
+            else:
+                columns = set()
+                for d in self.data:
+                    columns |= set(d)
+                self._columns = columns
+        return self._columns
+
+    @property
+    def query(self):
+        pass
+
+    def _query(self):
+        q = 'INSERT INTO %s ' % self.table
+
+        if not self.data:
+            q += 'DEFAULT VALUES'
+        else:
+            q += '('
+            q += ','.join(col_name for col_name in self.columns)
+            q += ') VALUES '
+
+        for index, d in enumerate(self.data):
+            if index > 0:
+                q += ','
+
+            q += '('
+            q += ','.join('%(col_name_' + str(index) + ')s'
+                          for col_name in self.columns)
+            q += ')'
+        q += ';'
+
+        return q
