@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from norm import SELECT
 from norm import UPDATE
+from norm import INSERT
 
 
 def test_simple_select():
@@ -281,3 +282,58 @@ def test_named_arg_update():
     assert u.query == expected
     assert u.binds == {'col1_bind': 'test',
                        'id_bind_1': 5}
+
+
+row1 = {'name': 'justin', 'zipcode': 23344}
+row2 = {'name': 'nintendo', 'phone': '1112223333'}
+
+
+def test_basic_insert():
+    i = INSERT('table1', data=row1)
+
+    assert i.binds == {'name_0': 'justin', 'zipcode_0': 23344}
+    assert i.query == ('INSERT INTO table1 '
+                       '(name, zipcode) VALUES (%(name_0)s, %(zipcode_0)s);')
+
+
+def test_multi_insert():
+    i = INSERT('table1', data=[row1, row2])
+    assert i.binds == {'name_0': 'justin',
+                       'phone_0': None,
+                       'zipcode_0': 23344,
+                       'name_1': 'nintendo',
+                       'phone_1': '1112223333',
+                       'zipcode_1': None}
+
+    assert i.query == ('INSERT INTO table1 '
+                       '(name, phone, zipcode) '
+                       'VALUES (%(name_0)s, %(phone_0)s, %(zipcode_0)s),\n'
+                       '       (%(name_1)s, %(phone_1)s, %(zipcode_1)s);')
+
+
+def test_setting_default():
+    i = INSERT('table1', data=[row1, row2], default=2)
+    assert i.binds == {'name_0': 'justin',
+                       'phone_0': 2,
+                       'zipcode_0': 23344,
+                       'name_1': 'nintendo',
+                       'phone_1': '1112223333',
+                       'zipcode_1': 2}
+
+
+def test_setting_columns():
+    i = INSERT('table1', data=row1, columns=['name', 'address'])
+    assert i.binds == {'name_0': 'justin', 'address_0': None}
+    assert i.query == ('INSERT INTO table1 '
+                       '(name, address) VALUES (%(name_0)s, %(address_0)s);')
+
+
+def test_setting_columns_default():
+    i = INSERT('table1', data=[row1, row2], columns=['phone'], default='blah')
+    assert i.binds == {'phone_0': 'blah',
+                       'phone_1': '1112223333'}
+
+    assert i.query == ('INSERT INTO table1 '
+                       '(phone) '
+                       'VALUES (%(phone_0)s),\n'
+                       '       (%(phone_1)s);')

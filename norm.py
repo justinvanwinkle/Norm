@@ -268,9 +268,19 @@ class INSERT(object):
     def binds(self):
         binds = {}
         if self.multi_data:
-            for index, d in enumerate(self.data):
-                pass
-        return self.data
+            data = self.data
+        else:
+            data = [self.data]
+
+        for index, d in enumerate(data):
+            for col_name in self.columns:
+                key = col_name + '_' + str(index)
+                if col_name in d:
+                    binds[key] = d[col_name]
+                else:
+                    binds[key] = self.default
+
+        return binds
 
     @property
     def multi_data(self):
@@ -289,29 +299,29 @@ class INSERT(object):
                 columns = set()
                 for d in self.data:
                     columns |= set(d)
-                self._columns = columns
+                self._columns = sorted(columns)
         return self._columns
 
     @property
     def query(self):
-        pass
+        if self.multi_data:
+            return self._query(self.data)
+        else:
+            return self._query([self.data])
 
-    def _query(self):
+    def _query(self, data):
         q = 'INSERT INTO %s ' % self.table
 
-        if not self.data:
-            q += 'DEFAULT VALUES'
-        else:
-            q += '('
-            q += ','.join(col_name for col_name in self.columns)
-            q += ') VALUES '
+        q += '('
+        q += ', '.join(col_name for col_name in self.columns)
+        q += ') VALUES '
 
-        for index, d in enumerate(self.data):
+        for index, d in enumerate(data):
             if index > 0:
-                q += ','
+                q += ',\n       '
 
             q += '('
-            q += ','.join('%(col_name_' + str(index) + ')s'
+            q += ', '.join('%(' + col_name + '_' + str(index) + ')s'
                           for col_name in self.columns)
             q += ')'
         q += ';'
