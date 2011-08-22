@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from norm import SELECT
 from norm import UPDATE
+from norm import DELETE
 from norm import INSERT
 
 
@@ -282,6 +283,33 @@ def test_named_arg_update():
     assert u.query == expected
     assert u.binds == {'col1_bind': 'test',
                        'id_bind_1': 5}
+
+
+def test_simple_delete():
+    d = DELETE('table1')
+
+    assert d.query == 'DELETE FROM table1;'
+    assert d.binds == {}
+
+
+def test_delete_where():
+    d = (DELETE('table2')
+         .WHERE('x > 5'))
+
+    assert d.query == '\n'.join([
+            "DELETE FROM table2",
+            " WHERE x > 5;"])
+    assert d.binds == {}
+
+
+def test_delete_where_autobind():
+    d = (DELETE('table3')
+         .WHERE(x=25))
+
+    assert d.query == '\n'.join([
+            "DELETE FROM table3",
+            " WHERE x = %(x_bind_0)s;"])
+    assert d.binds == {'x_bind_0': 25}
 
 
 row1 = {'name': 'justin', 'zipcode': 23344}

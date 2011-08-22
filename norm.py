@@ -15,6 +15,7 @@ SET = b's'
 
 SELECT_QT = b's'
 UPDATE_QT = b'u'
+DELETE_QT = b'd'
 INSERT_QT = b'i'
 
 SEP = '\n       '
@@ -103,6 +104,12 @@ def compile(chain, query_type):
             query += '\n WHERE ' + (' AND' + SEP).join(where)
         if extra:
             query += '\n'.join(extra)
+    elif query_type == DELETE_QT:
+        query += 'DELETE FROM ' + table
+        if from_:
+            query += '\n  FROM ' + SEP.join(from_)
+        if where:
+            query += '\n WHERE ' + (' AND' + SEP).join(where)
 
     query += ';'
     return query
@@ -255,6 +262,16 @@ class UPDATE(_SELECT_UPDATE):
 
     def EXTRA(self, *args):
         pass
+
+
+class DELETE(_SELECT_UPDATE):
+    query_type = DELETE_QT
+
+    def __init__(self, table=None):
+        super(DELETE, self).__init__()
+
+        if table is not None:
+            self.chain.append((TABLE, table))
 
 
 class INSERT(object):
