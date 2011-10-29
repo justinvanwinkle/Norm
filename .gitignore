@@ -5,3 +5,5 @@
 *.pyo
 \#*\#
 *.DS_Store
+.coverage
+htmlcov/
