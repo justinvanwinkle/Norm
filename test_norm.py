@@ -285,6 +285,17 @@ def test_named_arg_update():
                        'id_bind_1': 5}
 
 
+def test_update_returning():
+    u = (UPDATE("table1")
+         .SET(col1='test')
+         .RETURNING('test', 'test1'))
+
+    assert u.query == '\n'.join([
+            "UPDATE table1",
+            "   SET col1 = %(col1_bind)s",
+            "RETURNING test, test1;"])
+
+
 def test_simple_delete():
     d = DELETE('table1')
 
@@ -309,6 +320,18 @@ def test_delete_where_autobind():
     assert d.query == '\n'.join([
             "DELETE FROM table3",
             " WHERE x = %(x_bind_0)s;"])
+    assert d.binds == {'x_bind_0': 25}
+
+
+def test_delete_returning():
+    d = (DELETE('table3')
+         .WHERE(x=25)
+         .RETURNING('this', 'that'))
+
+    assert d.query == '\n'.join([
+            "DELETE FROM table3",
+            " WHERE x = %(x_bind_0)s",
+            "RETURNING this, that;"])
     assert d.binds == {'x_bind_0': 25}
 
 
@@ -365,3 +388,12 @@ def test_setting_columns_default():
                        '(phone) '
                        'VALUES (%(phone_0)s),\n'
                        '       (%(phone_1)s);')
+
+
+def test_insert_returning():
+    i = INSERT('table1', data=row1, returning=['test', 'test1'])
+
+    assert i.binds == {'name_0': 'justin', 'zipcode_0': 23344}
+    assert i.query == ('INSERT INTO table1 '
+                       '(name, zipcode) VALUES (%(name_0)s, %(zipcode_0)s)'
+                       '\nRETURNING test, test1;')

@@ -14,6 +14,7 @@ OFFSET = b'os'
 EXTRA = b'ex'
 TABLE = b't'
 SET = b's'
+RETURNING = b'r'
 
 SELECT_QT = b's'
 UPDATE_QT = b'u'
@@ -42,6 +43,7 @@ def compile(chain, query_type):
     offset = None
     set_ = []
     extra = []
+    returning = []
 
     for op, option in chain:
         if op == COLUMN:
@@ -74,6 +76,8 @@ def compile(chain, query_type):
             having = option
         elif op == EXTRA:
             extra.append(option)
+        elif op == RETURNING:
+            returning.append(option)
         else:
             raise BogusQuery('There was a fatal error compiling query.')
 
@@ -106,12 +110,16 @@ def compile(chain, query_type):
             query += '\n WHERE ' + (' AND' + SEP).join(where)
         if extra:
             query += '\n'.join(extra)
+        if returning:
+            query += '\nRETURNING ' + ', '.join(returning)
     elif query_type == DELETE_QT:
         query += 'DELETE FROM ' + table
         if from_:
             query += '\n  FROM ' + SEP.join(from_)
         if where:
             query += '\n WHERE ' + (' AND' + SEP).join(where)
+        if returning:
+            query += '\nRETURNING ' + ', '.join(returning)
 
     query += ';'
     return query
@@ -192,6 +200,12 @@ class _SELECT_UPDATE(Query):
         s.chain.append((FROM, (stmt, True, op, criteria)))
         return s
 
+    def RETURNING(self, *args):
+        s = self.child()
+        for arg in args:
+            self.chain.append((RETURNING, arg))
+        return s
+
 
 class SELECT(_SELECT_UPDATE):
     query_type = SELECT_QT
@@ -259,9 +273,6 @@ class UPDATE(_SELECT_UPDATE):
             s.chain.append((SET, expr))
         return s
 
-    def RETURNING(self, *args):
-        pass
-
     def EXTRA(self, *args):
         pass
 
@@ -277,11 +288,17 @@ class DELETE(_SELECT_UPDATE):
 
 
 class INSERT(object):
-    def __init__(self, table, data=None, columns=None, default=None):
+    def __init__(self,
+                 table,
+                 data=None,
+                 columns=None,
+                 default=None,
+                 returning=None):
         self.table = table
         self.data = data
         self._columns = columns
         self.default = default
+        self.returning = returning
 
     @property
     def binds(self):
@@ -343,6 +360,9 @@ class INSERT(object):
             q += ', '.join('%(' + col_name + '_' + str(index) + ')s'
                           for col_name in self.columns)
             q += ')'
+
+        if self.returning:
+            q += '\nRETURNING ' + ', '.join(self.returning)
         q += ';'
 
         return q

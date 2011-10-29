@@ -1,5 +1,3 @@
-
-"""
 [ WITH [ RECURSIVE ] with_query [, ...] ]
 SELECT [ ALL | DISTINCT [ ON ( expression [, ...] ) ] ]
     * | expression [ [ AS ] output_name ] [, ...]
@@ -32,21 +30,24 @@ and with_query is:
     with_query_name [ ( column_name [, ...] ) ] AS ( select )
 
 TABLE { [ ONLY ] table_name [ * ] | with_query_name }
-"""
 
-"""
+
+
+
+
 UPDATE [ ONLY ] table [ [ AS ] alias ]
     SET { column = { expression | DEFAULT } |
           ( column [, ...] ) = ( { expression | DEFAULT } [, ...] ) } [, ...]
     [ FROM fromlist ]
     [ WHERE condition | WHERE CURRENT OF cursor_name ]
     [ RETURNING * | output_expression [ [ AS ] output_name ] [, ...] ]
-"""
 
 
-"""
+
+
+
 INSERT INTO table [ ( column [, ...] ) ]
     { DEFAULT VALUES | VALUES ( { expression | DEFAULT } \
       [, ...] ) [, ...] | query }
     [ RETURNING * | output_expression [ [ AS ] output_name ] [, ...] ]
-"""
+
