@@ -4,4 +4,4 @@ from norm import INSERT
 from norm import DELETE
 from norm import __version__
 
-__all__ = ['__version__', 'SELECT', 'UPDATE', 'INSERT']
+__all__ = ['__version__', 'SELECT', 'UPDATE', 'DELETE', 'INSERT']
