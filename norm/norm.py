@@ -358,7 +358,7 @@ class INSERT(object):
 
             q += '('
             q += ', '.join('%(' + col_name + '_' + str(index) + ')s'
-                          for col_name in self.columns)
+                           for col_name in self.columns)
             q += ')'
 
         if self.returning:
