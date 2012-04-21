@@ -357,7 +357,7 @@ class INSERT(object):
             q += ') VALUES '
 
         if self.data is None:
-            q += '\n    DEFAULT VALUES'
+            q += ' DEFAULT VALUES'
         else:
             for index, d in enumerate(data):
                 if index > 0:
