@@ -390,10 +390,20 @@ def test_setting_columns_default():
                        '       (%(phone_1)s);')
 
 
-def test_insert_returning():
-    i = INSERT('table1', data=row1, returning=['test', 'test1'])
+def test_insert_no_columns():
+    i = INSERT('table1', data=[row1, row2], columns=['phone'], default='blah')
+    assert i.binds == {'phone_0': 'blah',
+                       'phone_1': '1112223333'}
 
-    assert i.binds == {'name_0': 'justin', 'zipcode_0': 23344}
     assert i.query == ('INSERT INTO table1 '
-                       '(name, zipcode) VALUES (%(name_0)s, %(zipcode_0)s)'
-                       '\nRETURNING test, test1;')
+                       '(phone) '
+                       'VALUES (%(phone_0)s),\n'
+                       '       (%(phone_1)s);')
+
+
+def test_insert_returning():
+    i = INSERT('table1')
+
+    assert i.binds == {}
+    assert i.query == ('INSERT INTO table1 '
+                       '\n    DEFAULT VALUES;')

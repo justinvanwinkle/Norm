@@ -303,6 +303,9 @@ class INSERT(object):
     @property
     def binds(self):
         binds = {}
+        if self.data is None:
+            return binds
+
         if self.multi_data:
             data = self.data
         else:
@@ -348,18 +351,22 @@ class INSERT(object):
     def _query(self, data):
         q = 'INSERT INTO %s ' % self.table
 
-        q += '('
-        q += ', '.join(col_name for col_name in self.columns)
-        q += ') VALUES '
-
-        for index, d in enumerate(data):
-            if index > 0:
-                q += ',\n       '
-
+        if self.columns:
             q += '('
-            q += ', '.join('%(' + col_name + '_' + str(index) + ')s'
-                           for col_name in self.columns)
-            q += ')'
+            q += ', '.join(col_name for col_name in self.columns)
+            q += ') VALUES '
+
+        if self.data is None:
+            q += '\n    DEFAULT VALUES'
+        else:
+            for index, d in enumerate(data):
+                if index > 0:
+                    q += ',\n       '
+
+                q += '('
+                q += ', '.join('%(' + col_name + '_' + str(index) + ')s'
+                               for col_name in self.columns)
+                q += ')'
 
         if self.returning:
             q += '\nRETURNING ' + ', '.join(self.returning)
