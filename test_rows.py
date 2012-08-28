@@ -3,20 +3,23 @@ from __future__ import unicode_literals
 from norm import RowsProxy
 
 
+column_names = ('user_id', 'opponent_name', 'game_id', 'score')
+
+
 def make_rows():
     return [
-        {'user_id': 5, 'opponent_name': 'John', 'game_id': 55, 'score': 34.14},
-        {'user_id': 5, 'opponent_name': 'John', 'game_id': 57, 'score': 35.14},
-        {'user_id': 5, 'opponent_name': 'Dirk', 'game_id': 59, 'score': 37.14},
-        {'user_id': 5, 'opponent_name': 'Dirk', 'game_id': 60, 'score': 38.14},
-        {'user_id': 6, 'opponent_name': 'Gabe', 'game_id': 95, 'score': 32.14},
-        {'user_id': 6, 'opponent_name': 'Gabe', 'game_id': 31, 'score': 31.14},
-        {'user_id': 6, 'opponent_name': 'Ted', 'game_id': 5, 'score': 4.14},
-        {'user_id': 7, 'opponent_name': 'Jim', 'game_id': 27, 'score': 8.14}]
+        (5, 'John', 55, 34.14),
+        (5, 'John', 57, 35.14),
+        (5, 'Dirk', 59, 37.14),
+        (5, 'Dirk', 60, 38.14),
+        (6, 'Gabe', 95, 32.14),
+        (6, 'Gabe', 31, 31.14),
+        (6, 'Ted', 5, 4.14),
+        (7, 'Jim', 27, 8.14)]
 
 
 def test_grouping():
-    rp = RowsProxy(make_rows())
+    rp = RowsProxy(make_rows(), column_names)
     id_score_map = {}
     for user_id, rows in rp('user_id'):
         scores = []

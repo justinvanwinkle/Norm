@@ -3,6 +3,7 @@ from norm import UPDATE
 from norm import INSERT
 from norm import DELETE
 from rows import RowsProxy
+from connection import ConnectionProxy
 from norm import __version__
 
 __all__ = ['__version__',
@@ -10,4 +11,5 @@ __all__ = ['__version__',
            'UPDATE',
            'DELETE',
            'INSERT',
-           'RowsProxy']
+           'RowsProxy',
+           'ConnectionProxy']

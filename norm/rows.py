@@ -4,8 +4,9 @@ from itertools import groupby
 
 
 class RowsProxy(object):
-    def __init__(self, rows):
+    def __init__(self, rows, column_names=None):
         self.rows = rows
+        self.column_names = column_names
 
     def __call__(self, *args):
         def key_func(row):
@@ -16,9 +17,13 @@ class RowsProxy(object):
                 l.append(row.get(key))
             return tuple(l)
 
-        for key, sub_rows_iter in groupby(self.rows, key=key_func):
+        for key, sub_rows_iter in groupby(self, key=key_func):
             yield key, RowsProxy(sub_rows_iter)
 
     def __iter__(self):
+        column_names = self.column_names
         for row in self.rows:
-            yield row
+            if column_names is None or hasattr(row, 'get'):
+                yield row
+            else:
+                yield dict(zip(column_names, row))
