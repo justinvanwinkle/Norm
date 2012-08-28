@@ -401,7 +401,7 @@ def test_insert_no_columns():
                        '       (%(phone_1)s);')
 
 
-def test_insert_returning():
+def test_insert_default_values():
     i = INSERT('table1')
 
     assert i.binds == {}
