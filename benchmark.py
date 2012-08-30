@@ -55,13 +55,15 @@ def time_it(f, last=None):
     #print f()
     start = time.time()
     for x in xrange(10000):
-        f()
+        query = f()
 
     elapsed = time.time() - start
     faster = ''
     if last is not None:
         faster = '%.1f' % (last / elapsed)
+    print 'Begin %s' % f.__name__, '*' * 50
     print '%s %.4f, %s' % (f.__name__, elapsed, faster)
+    print query
     return elapsed
 
 

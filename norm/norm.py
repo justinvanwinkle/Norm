@@ -57,7 +57,7 @@ def compile(chain, query_type):
                     from_[-1] += ','
                 from_.append(expr)
             else:
-                from_[-1] += '\n  JOIN ' + expr
+                from_[-1] += '\n  ' + join + ' ' + expr
                 if op is not None:
                     from_[-1] += '\n       ' + op + ' ' + criteria
         elif op == TABLE:
@@ -184,7 +184,11 @@ class _SELECT_UPDATE(Query):
             s.chain.append((FROM, (stmt, False, None, None)))
         return s
 
-    def JOIN(self, stmt, ON=None, USING=None):
+    def JOIN(self, stmt, ON=None, USING=None, outer=False):
+        if outer:
+            keyword = 'OUTER JOIN'
+        else:
+            keyword = 'JOIN'
         if ON is not None and USING is not None:
             raise BogusQuery("You can't specify both ON and USING.")
         elif ON is not None:
@@ -197,8 +201,11 @@ class _SELECT_UPDATE(Query):
             raise BogusQuery('No join criteria specified.')
 
         s = self.child()
-        s.chain.append((FROM, (stmt, True, op, criteria)))
+        s.chain.append((FROM, (stmt, keyword, op, criteria)))
         return s
+
+    def OUTERJOIN(self, *args, **kw):
+        return self.JOIN(*args, outer=True, **kw)
 
     def RETURNING(self, *args):
         s = self.child()
