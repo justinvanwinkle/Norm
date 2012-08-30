@@ -5,6 +5,7 @@ from rows import RowsProxy
 
 class ConnectionFactory(object):
     def __init__(self, connection_maker):
+
         # Closure to prevent connection_maker being called with 'self'
         def _conn_maker(self):
             return connection_maker()

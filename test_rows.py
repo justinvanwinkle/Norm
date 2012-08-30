@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 from norm import RowsProxy
 
-
 column_names = ('user_id', 'opponent_name', 'game_id', 'score')
 
 
