@@ -11,9 +11,9 @@ def test_simple_select():
          .FROM("table1 AS tbl1")
          .WHERE("tbl1.col2 = 'testval'"))
     expected = '\n'.join([
-            "SELECT tbl1.column1 AS col1",
-            "  FROM table1 AS tbl1",
-            " WHERE tbl1.col2 = 'testval';"])
+        "SELECT tbl1.column1 AS col1",
+        "  FROM table1 AS tbl1",
+        " WHERE tbl1.col2 = 'testval';"])
     assert s.query == expected
 
 
@@ -25,13 +25,13 @@ def test_simple_inner_join_select():
                  "tbl2.column3 AS col3")
          .WHERE("tbl1.col2 = 'testval'"))
     expected = '\n'.join([
-            "SELECT tbl1.column1 AS col1,",
-            "       tbl2.column2 AS col2,",
-            "       tbl2.column3 AS col3",
-            "  FROM table1 AS tbl1",
-            "  JOIN table2 AS tbl2",
-            "       ON tbl1.tid = tbl2.tid",
-            " WHERE tbl1.col2 = 'testval';"])
+        "SELECT tbl1.column1 AS col1,",
+        "       tbl2.column2 AS col2,",
+        "       tbl2.column3 AS col3",
+        "  FROM table1 AS tbl1",
+        "  JOIN table2 AS tbl2",
+        "       ON tbl1.tid = tbl2.tid",
+        " WHERE tbl1.col2 = 'testval';"])
     assert s.query == expected
 
 
@@ -41,10 +41,10 @@ def test_multiple_where():
          .WHERE("tbl1.col2 = 'testval'")
          .WHERE("tbl1.col3 = 'otherval'"))
     expected = '\n'.join([
-            "SELECT tbl1.column1 AS col1",
-            "  FROM table1 AS tbl1",
-            " WHERE tbl1.col2 = 'testval' AND",
-            "       tbl1.col3 = 'otherval';"])
+        "SELECT tbl1.column1 AS col1",
+        "  FROM table1 AS tbl1",
+        " WHERE tbl1.col2 = 'testval' AND",
+        "       tbl1.col3 = 'otherval';"])
 
     assert s.query == expected
 
@@ -62,17 +62,17 @@ def test_all_select_methods():
          .OFFSET(3))
 
     expected = '\n'.join([
-            "SELECT tbl1.column1 AS col1,",
-            "       table2.blah",
-            "  FROM table1 AS tbl1",
-            "  JOIN table2",
-            "       ON table2.blah = tbl1.col2",
-            " WHERE tbl1.col2 = 'testval'",
-            "GROUP BY table2.blah, col1",
-            "HAVING count(*) > 5",
-            "ORDER BY count(*)",
-            " LIMIT 5",
-            "OFFSET 3;"])
+        "SELECT tbl1.column1 AS col1,",
+        "       table2.blah",
+        "  FROM table1 AS tbl1",
+        "  JOIN table2",
+        "       ON table2.blah = tbl1.col2",
+        " WHERE tbl1.col2 = 'testval'",
+        "GROUP BY table2.blah, col1",
+        "HAVING count(*) > 5",
+        "ORDER BY count(*)",
+        " LIMIT 5",
+        "OFFSET 3;"])
 
     assert s.query == expected
 
@@ -95,17 +95,17 @@ def test_overwriting_select_methods_overwrite():
          .OFFSET(3))
 
     expected = '\n'.join([
-            "SELECT tbl1.column1 AS col1,",
-            "       table2.blah",
-            "  FROM table1 AS tbl1",
-            "  JOIN table2",
-            "       ON table2.blah = tbl1.col2",
-            " WHERE tbl1.col2 = 'testval'",
-            "GROUP BY table2.blah, col1",
-            "HAVING count(*) > 5",
-            "ORDER BY count(*)",
-            " LIMIT 5",
-            "OFFSET 3;"])
+        "SELECT tbl1.column1 AS col1,",
+        "       table2.blah",
+        "  FROM table1 AS tbl1",
+        "  JOIN table2",
+        "       ON table2.blah = tbl1.col2",
+        " WHERE tbl1.col2 = 'testval'",
+        "GROUP BY table2.blah, col1",
+        "HAVING count(*) > 5",
+        "ORDER BY count(*)",
+        " LIMIT 5",
+        "OFFSET 3;"])
 
     assert s.query == expected
 
@@ -118,10 +118,10 @@ def test_binds():
           .bind(bind1='bind1value'))
 
     expected1 = '\n'.join([
-            "SELECT tbl1.column1 AS col1",
-            "  FROM table1 AS tbl1",
-            " WHERE tbl1.col2 = 'testval' AND",
-            "       tbl1.col3 = %(bind1)s;"])
+        "SELECT tbl1.column1 AS col1",
+        "  FROM table1 AS tbl1",
+        " WHERE tbl1.col2 = 'testval' AND",
+        "       tbl1.col3 = %(bind1)s;"])
 
     assert s1.query == expected1
     assert s1.binds == {'bind1': 'bind1value'}
@@ -140,22 +140,22 @@ def test_generate_binds():
           .bind(bind1='bind1value'))
 
     expected1_v1 = '\n'.join([
-            "SELECT tbl1.column1 AS col1",
-            "  FROM table1 AS tbl1",
-            " WHERE id = %(id_bind_0)s AND",
-            "       name = %(name_bind_1)s AND",
-            "       occupation = %(occupation_bind_2)s AND",
-            "       salary = %(salary_bind_3)s AND",
-            "       tbl1.col3 = %(bind1)s;"])
+        "SELECT tbl1.column1 AS col1",
+        "  FROM table1 AS tbl1",
+        " WHERE id = %(id_bind_0)s AND",
+        "       name = %(name_bind_1)s AND",
+        "       occupation = %(occupation_bind_2)s AND",
+        "       salary = %(salary_bind_3)s AND",
+        "       tbl1.col3 = %(bind1)s;"])
 
     expected1_v2 = '\n'.join([
-            "SELECT tbl1.column1 AS col1",
-            "  FROM table1 AS tbl1",
-            " WHERE id = %(id_bind_0)s AND",
-            "       name = %(name_bind_1)s AND",
-            "       salary = %(salary_bind_2)s AND",
-            "       occupation = %(occupation_bind_3)s AND",
-            "       tbl1.col3 = %(bind1)s;"])
+        "SELECT tbl1.column1 AS col1",
+        "  FROM table1 AS tbl1",
+        " WHERE id = %(id_bind_0)s AND",
+        "       name = %(name_bind_1)s AND",
+        "       salary = %(salary_bind_2)s AND",
+        "       occupation = %(occupation_bind_3)s AND",
+        "       tbl1.col3 = %(bind1)s;"])
     if s1.query.find('salary') > s1.query.find('occupation'):
         assert s1.query == expected1_v1
         assert s1.binds == {'bind1': 'bind1value',
@@ -175,9 +175,9 @@ def test_generate_binds():
 
 def test_generative_query():
     s1 = (SELECT("tbl1.column1 AS col1")
-         .FROM("table1 AS tbl1")
-         .WHERE("tbl1.col2 = 'testval'")
-         .WHERE("tbl1.col3 = 'otherval'"))
+          .FROM("table1 AS tbl1")
+          .WHERE("tbl1.col2 = 'testval'")
+          .WHERE("tbl1.col3 = 'otherval'"))
 
     s2 = s1.WHERE("tbl1.col4 = 'otherother'")
 
@@ -186,49 +186,49 @@ def test_generative_query():
     s5 = s4.SELECT("tbl3.whatever AS whatever").bind(test='test2', val='nope')
 
     expected1 = '\n'.join([
-            "SELECT tbl1.column1 AS col1",
-            "  FROM table1 AS tbl1",
-            " WHERE tbl1.col2 = 'testval' AND",
-            "       tbl1.col3 = 'otherval';"])
+        "SELECT tbl1.column1 AS col1",
+        "  FROM table1 AS tbl1",
+        " WHERE tbl1.col2 = 'testval' AND",
+        "       tbl1.col3 = 'otherval';"])
 
     expected2 = '\n'.join([
-            "SELECT tbl1.column1 AS col1",
-            "  FROM table1 AS tbl1",
-            " WHERE tbl1.col2 = 'testval' AND",
-            "       tbl1.col3 = 'otherval' AND",
-            "       tbl1.col4 = 'otherother';"])
+        "SELECT tbl1.column1 AS col1",
+        "  FROM table1 AS tbl1",
+        " WHERE tbl1.col2 = 'testval' AND",
+        "       tbl1.col3 = 'otherval' AND",
+        "       tbl1.col4 = 'otherother';"])
 
     expected3 = '\n'.join([
-            "SELECT tbl1.column1 AS col1",
-            "  FROM table1 AS tbl1",
-            "  JOIN table2 AS tbl2",
-            "       USING somecol",
-            " WHERE tbl1.col2 = 'testval' AND",
-            "       tbl1.col3 = 'otherval' AND",
-            "       tbl1.col4 = 'otherother';"])
+        "SELECT tbl1.column1 AS col1",
+        "  FROM table1 AS tbl1",
+        "  JOIN table2 AS tbl2",
+        "       USING somecol",
+        " WHERE tbl1.col2 = 'testval' AND",
+        "       tbl1.col3 = 'otherval' AND",
+        "       tbl1.col4 = 'otherother';"])
 
     expected4 = '\n'.join([
-            "SELECT tbl1.column1 AS col1",
-            "  FROM table1 AS tbl1",
-            "  JOIN table2 AS tbl2",
-            "       USING somecol",
-            "  JOIN table3 AS tbl3",
-            "       ON tbl3.colx = tbl2.coly",
-            " WHERE tbl1.col2 = 'testval' AND",
-            "       tbl1.col3 = 'otherval' AND",
-            "       tbl1.col4 = 'otherother';"])
+        "SELECT tbl1.column1 AS col1",
+        "  FROM table1 AS tbl1",
+        "  JOIN table2 AS tbl2",
+        "       USING somecol",
+        "  JOIN table3 AS tbl3",
+        "       ON tbl3.colx = tbl2.coly",
+        " WHERE tbl1.col2 = 'testval' AND",
+        "       tbl1.col3 = 'otherval' AND",
+        "       tbl1.col4 = 'otherother';"])
 
     expected5 = '\n'.join([
-            "SELECT tbl1.column1 AS col1,",
-            "       tbl3.whatever AS whatever",
-            "  FROM table1 AS tbl1",
-            "  JOIN table2 AS tbl2",
-            "       USING somecol",
-            "  JOIN table3 AS tbl3",
-            "       ON tbl3.colx = tbl2.coly",
-            " WHERE tbl1.col2 = 'testval' AND",
-            "       tbl1.col3 = 'otherval' AND",
-            "       tbl1.col4 = 'otherother';"])
+        "SELECT tbl1.column1 AS col1,",
+        "       tbl3.whatever AS whatever",
+        "  FROM table1 AS tbl1",
+        "  JOIN table2 AS tbl2",
+        "       USING somecol",
+        "  JOIN table3 AS tbl3",
+        "       ON tbl3.colx = tbl2.coly",
+        " WHERE tbl1.col2 = 'testval' AND",
+        "       tbl1.col3 = 'otherval' AND",
+        "       tbl1.col4 = 'otherother';"])
 
     assert s5.query == expected5
     assert s5.binds == {'test': 'test2', 'val': 'nope'}
@@ -247,9 +247,9 @@ def test_simple_update():
          .SET("col1 = 'test'")
          .SET("col2 = 'test2'"))
     expected = '\n'.join([
-            "UPDATE table1",
-            "   SET col1 = 'test',",
-            "       col2 = 'test2';"])
+        "UPDATE table1",
+        "   SET col1 = 'test',",
+        "       col2 = 'test2';"])
 
     assert u.query == expected
 
@@ -260,10 +260,10 @@ def test_update_one_row():
          .SET("col2 = 'test2'")
          .WHERE(id=5))
     expected = '\n'.join([
-            "UPDATE table1",
-            "   SET col1 = 'test',",
-            "       col2 = 'test2'",
-            " WHERE id = %(id_bind_0)s;"])
+        "UPDATE table1",
+        "   SET col1 = 'test',",
+        "       col2 = 'test2'",
+        " WHERE id = %(id_bind_0)s;"])
 
     assert u.query == expected
     assert u.binds == {'id_bind_0': 5}
@@ -275,10 +275,10 @@ def test_named_arg_update():
          .SET("col2 = 'test2'")
          .WHERE(id=5))
     expected = '\n'.join([
-            "UPDATE table1",
-            "   SET col1 = %(col1_bind)s,",
-            "       col2 = 'test2'",
-            " WHERE id = %(id_bind_1)s;"])
+        "UPDATE table1",
+        "   SET col1 = %(col1_bind)s,",
+        "       col2 = 'test2'",
+        " WHERE id = %(id_bind_1)s;"])
 
     assert u.query == expected
     assert u.binds == {'col1_bind': 'test',
@@ -291,9 +291,9 @@ def test_update_returning():
          .RETURNING('test', 'test1'))
 
     assert u.query == '\n'.join([
-            "UPDATE table1",
-            "   SET col1 = %(col1_bind)s",
-            "RETURNING test, test1;"])
+        "UPDATE table1",
+        "   SET col1 = %(col1_bind)s",
+        "RETURNING test, test1;"])
 
 
 def test_simple_delete():
@@ -308,8 +308,8 @@ def test_delete_where():
          .WHERE('x > 5'))
 
     assert d.query == '\n'.join([
-            "DELETE FROM table2",
-            " WHERE x > 5;"])
+        "DELETE FROM table2",
+        " WHERE x > 5;"])
     assert d.binds == {}
 
 
@@ -318,8 +318,8 @@ def test_delete_where_autobind():
          .WHERE(x=25))
 
     assert d.query == '\n'.join([
-            "DELETE FROM table3",
-            " WHERE x = %(x_bind_0)s;"])
+        "DELETE FROM table3",
+        " WHERE x = %(x_bind_0)s;"])
     assert d.binds == {'x_bind_0': 25}
 
 
@@ -329,11 +329,10 @@ def test_delete_returning():
          .RETURNING('this', 'that'))
 
     assert d.query == '\n'.join([
-            "DELETE FROM table3",
-            " WHERE x = %(x_bind_0)s",
-            "RETURNING this, that;"])
+        "DELETE FROM table3",
+        " WHERE x = %(x_bind_0)s",
+        "RETURNING this, that;"])
     assert d.binds == {'x_bind_0': 25}
-
 
 row1 = {'name': 'justin', 'zipcode': 23344}
 row2 = {'name': 'nintendo', 'phone': '1112223333'}
