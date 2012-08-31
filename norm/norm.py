@@ -125,12 +125,18 @@ def compile(chain, query_type):
 
 class Query(object):
     query_type = None
+    bind_prefix = '%('
+    bind_postfix = ')s'
 
     def __init__(self):
         self.parent = None
         self.chain = []
         self._binds = {}
         self._query = None
+
+    @classmethod
+    def bnd(cls, s):
+        return "%s%s%s" % (cls.bind_prefix, s, cls.bind_postfix)
 
     @property
     def binds(self):
@@ -172,7 +178,7 @@ class _SELECT_UPDATE(Query):
             column_name = unicode(column_name)
             bind_val_name = '%s_bind_%s' % (column_name, len(self.binds))
             self._binds[bind_val_name] = value
-            expr = column_name + ' = %(' + bind_val_name + ')s'
+            expr = column_name + ' = ' + self.bnd(bind_val_name)
             s.chain.append((WHERE, expr))
         return s
 
@@ -274,7 +280,7 @@ class UPDATE(_SELECT_UPDATE):
         for column_name, value in kw.iteritems():
             bind_name = column_name + '_bind'
             self._binds[bind_name] = value
-            expr = unicode(column_name) + ' = %(' + bind_name + ')s'
+            expr = unicode(column_name) + ' = ' + self.bnd(bind_name)
             s.chain.append((SET, expr))
         return s
 
@@ -292,18 +298,33 @@ class DELETE(_SELECT_UPDATE):
             self.chain.append((TABLE, table))
 
 
+class _default(object):
+    pass
+
+
 class INSERT(object):
+    bind_prefix = '%('
+    bind_postfix = ')s'
+    defaultdefault = None
+
     def __init__(self,
                  table,
                  data=None,
                  columns=None,
-                 default=None,
+                 default=_default,
                  returning=None):
         self.table = table
         self.data = data
         self._columns = columns
-        self.default = default
+        if default is _default:
+            self.default = self.defaultdefault
+        else:
+            self.default = default
         self.returning = returning
+
+    @classmethod
+    def bnd(cls, s):
+        return "%s%s%s" % (cls.bind_prefix, s, cls.bind_postfix)
 
     @property
     def binds(self):
@@ -369,7 +390,7 @@ class INSERT(object):
                     q += ',\n       '
 
                 q += '('
-                q += ', '.join('%(' + col_name + '_' + str(index) + ')s'
+                q += ', '.join(self.bnd(col_name + '_' + str(index))
                                for col_name in self.columns)
                 q += ')'
 

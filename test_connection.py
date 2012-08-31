@@ -2,9 +2,9 @@ from __future__ import unicode_literals
 
 import sqlite3
 
-from norm import ConnectionFactory
-from norm import SELECT
-from norm import INSERT
+from norm.norm_sqlite3 import SQLI_ConnectionFactory as ConnectionFactory
+from norm.norm_sqlite3 import SQLI_SELECT as SELECT
+from norm.norm_sqlite3 import SQLI_INSERT as INSERT
 
 
 def conn_maker():
@@ -36,6 +36,7 @@ def test_run_query():
 
     i = INSERT('users', data={'first_name': 'Justin'})
     conn.run_query(i)
+    conn.commit()
 
     user_ids = conn.run_query(s)
     assert list(user_ids) == [{'user_id': 1}]

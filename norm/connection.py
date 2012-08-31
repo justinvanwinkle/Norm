@@ -3,15 +3,32 @@ from __future__ import unicode_literals
 from rows import RowsProxy
 
 
-class ConnectionFactory(object):
-    def __init__(self, connection_maker):
-        self.connection_maker = connection_maker
+class CursorProxy(object):
+    def __init__(self, cursor):
+        self.cursor = cursor
 
-    def __call__(self):
-        return ConnectionProxy(self.connection_maker())
+    def __getattr__(self, name):
+        return getattr(self.cursor, name)
+
+    @property
+    def column_names(self):
+        if self.description is None:
+            return
+        return [d[0] for d in self.description]
+
+    def fetchall(self):
+        return RowsProxy(self.cursor.fetchall(), self.column_names)
+
+    def fetchone(self):
+        row = self.cursor.fetchone()
+        if row is None:
+            return row
+        return dict(zip(self.column_names, row))
 
 
 class ConnectionProxy(object):
+    cursor_proxy = CursorProxy
+
     def __init__(self, conn):
         self.conn = conn
 
@@ -19,7 +36,7 @@ class ConnectionProxy(object):
         return getattr(self.conn, name)
 
     def cursor(self, *args, **kw):
-        return CursorProxy(self.conn.cursor(*args, **kw))
+        return self.cursor_proxy(self.conn.cursor(*args, **kw))
 
     def run_query(self, q):
         cur = self.cursor()
@@ -41,22 +58,11 @@ class ConnectionProxy(object):
             cur.close()
 
 
-class CursorProxy(object):
-    def __init__(self, cursor):
-        self.cursor = cursor
+class ConnectionFactory(object):
+    connection_proxy = ConnectionProxy
 
-    def __getattr__(self, name):
-        return getattr(self.cursor, name)
+    def __init__(self, connection_maker):
+        self.connection_maker = connection_maker
 
-    @property
-    def column_names(self):
-        return [d[0] for d in self.description]
-
-    def fetchall(self):
-        return RowsProxy(self.cursor.fetchall(), self.column_names)
-
-    def fetchone(self):
-        row = self.cursor.fetchone()
-        if row is None:
-            return row
-        return dict(zip(self.column_names, row))
+    def __call__(self):
+        return self.connection_proxy(self.connection_maker())
