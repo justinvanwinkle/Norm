@@ -31,13 +31,11 @@ class ConnectionProxy(object):
         finally:
             cur.close()
 
-    def run_queryone(self, q, scalar=False):
+    def run_queryone(self, q):
         cur = self.cursor()
         try:
             cur.execute(q.query, q.binds)
             result = cur.fetchone()
-            if result and scalar:
-                return result[0]
             return result
         finally:
             cur.close()

@@ -6,10 +6,8 @@ from rows import RowsProxy
 from connection import ConnectionProxy
 from connection import ConnectionFactory
 from connection import CursorProxy
-from norm import __version__
 
-__all__ = ['__version__',
-           'SELECT',
+__all__ = ['SELECT',
            'UPDATE',
            'DELETE',
            'INSERT',
