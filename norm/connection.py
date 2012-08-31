@@ -38,6 +38,7 @@ class ConnectionProxy(object):
             result = cur.fetchone()
             if result and scalar:
                 return result[0]
+            return result
         finally:
             cur.close()
 
