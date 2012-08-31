@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 from distutils.core import setup
 
-from norm import __version__
-
 sdict = {
     'name': 'norm',
-    'version': unicode(__version__),
+    'version': '1.0.2',
     'description': 'Easy peasy sql generation',
     'long_description': "Really easy SQL generation",
     'url': 'http://github.com/justinvanwinkle',
