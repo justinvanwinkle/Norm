@@ -5,11 +5,7 @@ from rows import RowsProxy
 
 class ConnectionFactory(object):
     def __init__(self, connection_maker):
-
-        # Closure to prevent connection_maker being called with 'self'
-        def _conn_maker(self):
-            return connection_maker()
-        self.connection_maker = _conn_maker
+        self.connection_maker = connection_maker
 
     def __call__(self):
         return ConnectionProxy(self.connection_maker())
@@ -27,25 +23,35 @@ class ConnectionProxy(object):
 
     def run_query(self, q):
         cur = self.cursor()
-        cur.execute(q.query, q.binds)
-        return q.fetchall()
+        try:
+            cur.execute(q.query, q.binds)
+            return cur.fetchall()
+        except:
+            raise
+        finally:
+            cur.close()
 
-    def run_queryone(self, q):
+    def run_queryone(self, q, scalar=False):
         cur = self.cursor()
-        cur.execute(q.query, q.binds)
-        return q.fetchone()
+        try:
+            cur.execute(q.query, q.binds)
+            result = cur.fetchone()
+            if result and scalar:
+                return result[0]
+        finally:
+            cur.close()
 
 
 class CursorProxy(object):
     def __init__(self, cursor):
         self.cursor = cursor
 
-    @property
-    def column_names(self):
-        return [d.name for d in self.description]
-
     def __getattr__(self, name):
         return getattr(self.cursor, name)
+
+    @property
+    def column_names(self):
+        return [d[0] for d in self.description]
 
     def fetchall(self):
         return RowsProxy(self.cursor.fetchall(), self.column_names)
