@@ -1,6 +1,4 @@
-*.elc
 *~
-.emacs.d/session*
 *.pyc
 *.pyo
 \#*\#
