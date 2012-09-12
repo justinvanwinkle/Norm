@@ -40,3 +40,20 @@ def test_run_query():
 
     user_ids = conn.run_query(s)
     assert list(user_ids) == [{'user_id': 1}]
+
+
+def test_runqueryone():
+    cf = ConnectionFactory(conn_maker)
+    conn = cf()
+
+    s = SELECT('user_id').FROM('users')
+    row = conn.run_queryone(s)
+    assert row is None
+
+    i = INSERT('users', data={'first_name': 'Justin'})
+    conn.run_query(i)
+    conn.commit()
+
+    s = SELECT('user_id').FROM('users')
+    row = conn.run_queryone(s)
+    assert row == {'user_id': 1}

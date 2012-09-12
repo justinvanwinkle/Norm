@@ -24,4 +24,5 @@ sdict = {
         'Operating System :: OS Independent',
         'Programming Language :: Python']}
 
-setup(**sdict)
+if __name__ == '__main__':
+    setup(**sdict)
