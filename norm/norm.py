@@ -190,7 +190,7 @@ class _SELECT_UPDATE(Query):
 
     def JOIN(self, stmt, ON=None, USING=None, outer=False):
         if outer:
-            keyword = 'OUTER JOIN'
+            keyword = 'LEFT JOIN'
         else:
             keyword = 'JOIN'
         if ON is not None and USING is not None:
@@ -208,7 +208,7 @@ class _SELECT_UPDATE(Query):
         s.chain.append((FROM, (stmt, keyword, op, criteria)))
         return s
 
-    def OUTERJOIN(self, *args, **kw):
+    def LEFTJOIN(self, *args, **kw):
         return self.JOIN(*args, outer=True, **kw)
 
     def RETURNING(self, *args):

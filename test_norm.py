@@ -38,7 +38,7 @@ def test_simple_inner_join_select():
 def test_simple_outer_join_select():
     s = (SELECT("tbl1.column1 AS col1")
          .FROM("table1 AS tbl1")
-         .OUTERJOIN("table2 AS tbl2", ON='tbl1.tid = tbl2.tid')
+         .LEFTJOIN("table2 AS tbl2", ON='tbl1.tid = tbl2.tid')
          .SELECT("tbl2.column2 AS col2",
                  "tbl2.column3 AS col3")
          .WHERE("tbl1.col2 = 'testval'"))
@@ -47,7 +47,7 @@ def test_simple_outer_join_select():
         "       tbl2.column2 AS col2,",
         "       tbl2.column3 AS col3",
         "  FROM table1 AS tbl1",
-        "  OUTER JOIN table2 AS tbl2",
+        "  LEFT JOIN table2 AS tbl2",
         "       ON tbl1.tid = tbl2.tid",
         " WHERE tbl1.col2 = 'testval';"])
     assert s.query == expected
