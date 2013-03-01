@@ -117,7 +117,6 @@ def compile(chain, query_type):
         if where:
             query += '\n WHERE ' + (' AND' + SEP).join(where)
         if returning:
-            print returning
             query += '\nRETURNING ' + ', '.join(returning)
 
     query += ';'
