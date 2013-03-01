@@ -117,6 +117,7 @@ def compile(chain, query_type):
         if where:
             query += '\n WHERE ' + (' AND' + SEP).join(where)
         if returning:
+            print returning
             query += '\nRETURNING ' + ', '.join(returning)
 
     query += ';'
@@ -214,7 +215,7 @@ class _SELECT_UPDATE(Query):
     def RETURNING(self, *args):
         s = self.child()
         for arg in args:
-            self.chain.append((RETURNING, args))
+            self.chain.append((RETURNING, arg))
         return s
 
 
@@ -395,7 +396,11 @@ class INSERT(object):
                 q += ')'
 
         if self.returning:
-            q += '\nRETURNING ' + ', '.join(self.returning)
+            if isinstance(self.returning, basestring):
+                returning = [self.returning]
+            else:
+                returning = self.returning
+            q += '\nRETURNING ' + ', '.join(returning)
         q += ';'
 
         return q
