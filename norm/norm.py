@@ -214,7 +214,7 @@ class _SELECT_UPDATE(Query):
     def RETURNING(self, *args):
         s = self.child()
         for arg in args:
-            self.chain.append((RETURNING, arg))
+            self.chain.append((RETURNING, args))
         return s
 
 
