@@ -16,6 +16,11 @@ class CursorProxy(object):
             return
         return [d[0] for d in self.description]
 
+    def execute(self, query, params=None):
+        if not isinstance(query, basestring):
+            return self.cursor.execute(query.query, query.binds)
+        return self.cursor.execute(query, params)
+
     def fetchall(self):
         return RowsProxy(self.cursor.fetchall(), self.column_names)
 
