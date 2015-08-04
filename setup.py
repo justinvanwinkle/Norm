@@ -3,7 +3,7 @@ from distutils.core import setup
 
 sdict = {
     'name': 'norm',
-    'version': '1.1.2',
+    'version': '1.1.3',
     'description': 'Easy peasy sql generation',
     'long_description': "Really easy SQL generation",
     'url': 'http://github.com/justinvanwinkle',
