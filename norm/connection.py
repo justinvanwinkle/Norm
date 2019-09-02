@@ -1,6 +1,4 @@
-from __future__ import unicode_literals
-
-from rows import RowsProxy
+from norm.rows import RowsProxy
 
 
 class CursorProxy(object):
@@ -17,7 +15,7 @@ class CursorProxy(object):
         return [d[0] for d in self.description]
 
     def execute(self, query, params=None):
-        if not isinstance(query, basestring):
+        if not isinstance(query, str):
             return self.cursor.execute(query.query, query.binds)
         return self.cursor.execute(query, params)
 
@@ -48,7 +46,7 @@ class ConnectionProxy(object):
         try:
             cur.execute(q.query, q.binds)
             return cur.fetchall()
-        except:
+        except Exception:
             raise
         finally:
             cur.close()

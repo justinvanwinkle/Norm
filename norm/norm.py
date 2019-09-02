@@ -1,4 +1,3 @@
-from __future__ import unicode_literals
 
 QUERY_TYPE = b'qt'
 COLUMN = b'c'
@@ -174,8 +173,8 @@ class _SELECT_UPDATE(Query):
         s = self.child()
         for stmt in args:
             s.chain.append((WHERE, stmt))
-        for column_name, value in kw.iteritems():
-            column_name = unicode(column_name)
+        for column_name, value in kw.items():
+            column_name = str(column_name)
             bind_val_name = '%s_bind_%s' % (column_name, len(self.binds))
             self._binds[bind_val_name] = value
             expr = column_name + ' = ' + self.bnd(bind_val_name)
@@ -249,15 +248,15 @@ class SELECT(_SELECT_UPDATE):
         return s
 
     def LIMIT(self, stmt):
-        if isinstance(stmt, (int, long)):
-            stmt = unicode(stmt)
+        if isinstance(stmt, int):
+            stmt = str(stmt)
         s = self.child()
         s.chain.append((LIMIT, stmt))
         return s
 
     def OFFSET(self, stmt):
-        if isinstance(stmt, (int, long)):
-            stmt = unicode(stmt)
+        if isinstance(stmt, int):
+            stmt = str(stmt)
         s = self.child()
         s.chain.append((OFFSET, stmt))
         return s
@@ -277,10 +276,10 @@ class UPDATE(_SELECT_UPDATE):
         for stmt in args:
             self.chain.append((SET, stmt))
 
-        for column_name, value in kw.iteritems():
+        for column_name, value in kw.items():
             bind_name = column_name + '_bind'
             self._binds[bind_name] = value
-            expr = unicode(column_name) + ' = ' + self.bnd(bind_name)
+            expr = str(column_name) + ' = ' + self.bnd(bind_name)
             s.chain.append((SET, expr))
         return s
 
@@ -349,7 +348,7 @@ class INSERT(object):
 
     @property
     def multi_data(self):
-        if hasattr(self.data, 'iterkeys'):
+        if hasattr(self.data, 'keys'):
             return False
         return True
 
@@ -395,7 +394,7 @@ class INSERT(object):
                 q += ')'
 
         if self.returning:
-            if isinstance(self.returning, basestring):
+            if isinstance(self.returning, str):
                 returning = [self.returning]
             else:
                 returning = self.returning

@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from itertools import groupby
 
 
@@ -12,10 +10,10 @@ class RowsProxy(object):
         def key_func(row):
             if len(args) == 1:
                 return row.get(args[0])
-            l = []
+            cols = []
             for key in args:
-                l.append(row.get(key))
-            return tuple(l)
+                cols.append(row.get(key))
+            return tuple(cols)
 
         for key, sub_rows_iter in groupby(self, key=key_func):
             yield key, RowsProxy(sub_rows_iter)

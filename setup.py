@@ -1,9 +1,8 @@
-#!/usr/bin/env python
-from distutils.core import setup
+from setuptools import setup
 
 sdict = {
     'name': 'norm',
-    'version': '1.1.3',
+    'version': '1.2.0',
     'description': 'Easy peasy sql generation',
     'long_description': "Really easy SQL generation",
     'url': 'http://github.com/justinvanwinkle',
@@ -15,7 +14,7 @@ sdict = {
     'keywords': ['Norm', 'sql'],
     'license': 'BSD',
     'packages': ['norm'],
-    #'test_suite' : 'tests.all_tests',
+    # 'test_suite' : 'tests.all_tests',
     'classifiers': [
         'Development Status :: 5 - Production/Stable',
         'Environment :: Console',

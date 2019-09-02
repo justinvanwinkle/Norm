@@ -352,6 +352,7 @@ def test_delete_returning():
         "RETURNING this, that;"])
     assert d.binds == {'x_bind_0': 25}
 
+
 row1 = {'name': 'justin', 'zipcode': 23344}
 row2 = {'name': 'nintendo', 'phone': '1112223333'}
 
