@@ -41,6 +41,9 @@ def test_run_query():
     user_ids = conn.run_query(s)
     assert list(user_ids) == [{'user_id': 1}]
 
+    user_ids = conn.run_query('SELECT user_id FROM users WHERE user_id = 1')
+    assert list(user_ids) == [{'user_id': 1}]
+
 
 def test_runqueryone():
     cf = ConnectionFactory(conn_maker)

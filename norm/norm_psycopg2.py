@@ -9,9 +9,11 @@ from norm.connection import ConnectionFactory
 from norm.connection import ConnectionProxy
 from norm.connection import CursorProxy
 
+DEFAULT = AsIs('DEFAULT')
+
 
 class PG_INSERT(INSERT):
-    defaultdefault = AsIs('DEFAULT')
+    defaultdefault = DEFAULT
 
 
 class PG_SELECT(SELECT):

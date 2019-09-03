@@ -1,6 +1,15 @@
 from norm.rows import RowsProxy
 
 
+def _to_query_binds(q, params):
+    if params is None:
+        params = {}
+    if not isinstance(q, str):
+        return q.query, q.binds
+    else:
+        return q, params
+
+
 class CursorProxy(object):
     def __init__(self, cursor):
         self.cursor = cursor
@@ -15,9 +24,7 @@ class CursorProxy(object):
         return [d[0] for d in self.description]
 
     def execute(self, query, params=None):
-        if not isinstance(query, str):
-            return self.cursor.execute(query.query, query.binds)
-        return self.cursor.execute(query, params)
+        return self.cursor.execute(*_to_query_binds(query, params))
 
     def fetchall(self):
         return RowsProxy(self.cursor.fetchall(), self.column_names)
@@ -41,20 +48,29 @@ class ConnectionProxy(object):
     def cursor(self, *args, **kw):
         return self.cursor_proxy(self.conn.cursor(*args, **kw))
 
-    def run_query(self, q):
+    def execute(self, q, params=None):
         cur = self.cursor()
         try:
-            cur.execute(q.query, q.binds)
+            cur.execute(*_to_query_binds(q, params))
+        except Exception:
+            raise
+        finally:
+            cur.close()
+
+    def run_query(self, q, params=None):
+        cur = self.cursor()
+        try:
+            cur.execute(*_to_query_binds(q, params))
             return cur.fetchall()
         except Exception:
             raise
         finally:
             cur.close()
 
-    def run_queryone(self, q):
+    def run_queryone(self, q, params=None):
         cur = self.cursor()
         try:
-            cur.execute(q.query, q.binds)
+            cur.execute(*_to_query_binds(q, params))
             result = cur.fetchone()
             return result
         finally:
