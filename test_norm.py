@@ -424,4 +424,4 @@ def test_insert_default_values():
 
     assert i.binds == {}
     assert i.query == ('INSERT INTO table1 '
-                       ' DEFAULT VALUES;')
+                       'DEFAULT VALUES;')

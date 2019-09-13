@@ -1,13 +1,13 @@
 
 from psycopg2.extensions import AsIs
 
-from norm.norm import SELECT
-from norm.norm import INSERT
-from norm.norm import UPDATE
-from norm.norm import DELETE
-from norm.connection import ConnectionFactory
-from norm.connection import ConnectionProxy
-from norm.connection import CursorProxy
+from .norm import SELECT
+from .norm import INSERT
+from .norm import UPDATE
+from .norm import DELETE
+from .connection import ConnectionFactory
+from .connection import ConnectionProxy
+from .connection import CursorProxy
 
 DEFAULT = AsIs('DEFAULT')
 

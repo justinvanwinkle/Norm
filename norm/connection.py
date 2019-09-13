@@ -35,6 +35,9 @@ class CursorProxy(object):
             return row
         return dict(zip(self.column_names, row))
 
+    def __iter__(self):
+        yield from self.cursor
+
 
 class ConnectionProxy(object):
     cursor_proxy = CursorProxy

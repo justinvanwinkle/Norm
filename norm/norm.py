@@ -28,6 +28,11 @@ class BogusQuery(Exception):
     pass
 
 
+def indent_string(s, indent):
+    lines = s.splitlines()
+    return '\n'.join(' ' * indent + line for line in lines)
+
+
 def compile(chain, query_type):
     table = None
     columns = []
@@ -122,7 +127,7 @@ def compile(chain, query_type):
     return query
 
 
-class Query(object):
+class Query:
     query_type = None
     bind_prefix = '%('
     bind_postfix = ')s'
@@ -310,11 +315,13 @@ class INSERT(object):
                  table,
                  data=None,
                  columns=None,
+                 statement=None,
                  default=_default,
                  returning=None):
         self.table = table
         self.data = data
         self._columns = columns
+        self.statement = statement
         if default is _default:
             self.default = self.defaultdefault
         else:
@@ -328,6 +335,8 @@ class INSERT(object):
     @property
     def binds(self):
         binds = {}
+        if self.statement:
+            binds.update(self.statement.binds)
         if self.data is None:
             return binds
 
@@ -379,11 +388,14 @@ class INSERT(object):
         if self.columns:
             q += '('
             q += ', '.join(col_name for col_name in self.columns)
-            q += ') VALUES '
+            q += ') '
 
-        if self.data is None:
-            q += ' DEFAULT VALUES'
+        if self.statement:
+            q += '\n' + indent_string(self.statement.query[:-1], 2)
+        elif self.data is None:
+            q += 'DEFAULT VALUES'
         else:
+            q += 'VALUES '
             for index, d in enumerate(data):
                 if index > 0:
                     q += ',\n       '
@@ -402,3 +414,27 @@ class INSERT(object):
         q += ';'
 
         return q
+
+
+class WITH(Query):
+    def __init__(self, **kw):
+        Query.__init__(self)
+        self.tables = kw
+        self.primary = None
+
+    def __call__(self, primary):
+        self.primary = primary
+        return self
+
+    @property
+    def query(self):
+        parts = []
+        for name, query in self.tables.items():
+            query_part = query.query[:-1]  # TODO: HACK!
+            query_section = indent_string(f'({query_part})\n', 7)
+            parts.append(f'{name} AS\n{query_section}')
+        return ('WITH ' +
+                ',\n     '.join(parts) +
+                '\n\n' +
+                self.primary.query +
+                ';')

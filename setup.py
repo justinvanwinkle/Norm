@@ -2,7 +2,7 @@ from setuptools import setup
 
 sdict = {
     'name': 'norm',
-    'version': '1.2.1',
+    'version': '1.2.2',
     'description': 'Easy peasy sql generation',
     'long_description': "Really easy SQL generation",
     'url': 'http://github.com/justinvanwinkle',
