@@ -26,6 +26,15 @@ class CursorProxy(object):
     def execute(self, query, params=None):
         return self.cursor.execute(*_to_query_binds(query, params))
 
+    def run_query(self, query, params=None):
+        self.execute(*_to_query_binds(query, params))
+        return self.fetchall()
+
+    def run_queryone(self, query, params=None):
+        self.execute(*_to_query_binds(query, params))
+        result = self.fetchone()
+        return result
+
     def fetchall(self):
         return RowsProxy(self.cursor.fetchall(), self.column_names)
 
@@ -55,27 +64,20 @@ class ConnectionProxy(object):
         cur = self.cursor()
         try:
             cur.execute(*_to_query_binds(q, params))
-        except Exception:
-            raise
         finally:
             cur.close()
 
-    def run_query(self, q, params=None):
+    def run_query(self, query, params=None):
         cur = self.cursor()
         try:
-            cur.execute(*_to_query_binds(q, params))
-            return cur.fetchall()
-        except Exception:
-            raise
+            return cur.run_query(query, params)
         finally:
             cur.close()
 
-    def run_queryone(self, q, params=None):
+    def run_queryone(self, query, params=None):
         cur = self.cursor()
         try:
-            cur.execute(*_to_query_binds(q, params))
-            result = cur.fetchone()
-            return result
+            return cur.run_queryone(query, params)
         finally:
             cur.close()
 
