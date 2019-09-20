@@ -438,3 +438,12 @@ class WITH(Query):
                 '\n\n' +
                 self.primary.query +
                 ';')
+
+    @property
+    def binds(self):
+        d = dict()
+        for query in self.tables.values():
+            d.update(query.binds)
+        if self.primary:
+            d.update(self.primary.binds)
+        return d
