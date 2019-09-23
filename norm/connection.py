@@ -38,6 +38,9 @@ class CursorProxy(object):
     def fetchall(self):
         return RowsProxy(self.cursor.fetchall(), self.column_names)
 
+    def fetchmany(self, count):
+        return RowsProxy(self.cursor.fetchmany(count), self.column_names)
+
     def fetchone(self):
         row = self.cursor.fetchone()
         if row is None:
