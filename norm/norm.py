@@ -144,8 +144,16 @@ class Query:
         return "%s%s%s" % (cls.bind_prefix, s, cls.bind_postfix)
 
     @property
+    def bind_len(self):
+        total = 0
+        if self.parent is not None:
+            total += self.parent.bind_len
+        total += len(self._binds)
+        return total
+
+    @property
     def bind_items(self):
-        if self.parent is not None and self.parent._binds:
+        if self.parent is not None:
             yield from self.parent.bind_items
         if self._binds:
             yield from self._binds
@@ -153,12 +161,12 @@ class Query:
     @property
     def binds(self):
         return dict(self.bind_items)
-        binds = {}
-        if self.parent is not None:
-            binds.update(self.parent.binds)
-        binds.update(self._binds)
+        # binds = {}
+        # if self.parent is not None:
+        #     binds.update(self.parent.binds)
+        # binds.update(self._binds)
 
-        return binds
+        # return binds
 
     def bind(self, **binds):
         s = self.child()
@@ -191,9 +199,8 @@ class _SELECT_UPDATE(Query):
         for stmt in args:
             s.chain.append((WHERE, stmt))
         for column_name, value in kw.items():
-            column_name = str(column_name)
-            bind_val_name = '%s_bind_%s' % (column_name, len(self.binds))
-            self._binds.append((bind_val_name, value))
+            bind_val_name = '%s_bind_%s' % (column_name, s.bind_len)
+            s._binds.append((bind_val_name, value))
             expr = column_name + ' = ' + self.bnd(bind_val_name)
             s.chain.append((WHERE, expr))
         return s
@@ -295,7 +302,7 @@ class UPDATE(_SELECT_UPDATE):
 
         for column_name, value in kw.items():
             bind_name = column_name + '_bind'
-            self._binds.append((bind_name, value))
+            s._binds.append((bind_name, value))
             expr = str(column_name) + ' = ' + self.bnd(bind_name)
             s.chain.append((SET, expr))
         return s

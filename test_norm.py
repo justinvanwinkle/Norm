@@ -151,9 +151,6 @@ def test_generate_binds():
           .WHERE(id=1)
           .WHERE(name='bossanova')
           .WHERE(occupation='rascal', salary=None)
-          # This last line makes testing a bit complex, there
-          #   is no way to predict reliably what order those two
-          #   constraints will come out in.
           .WHERE("tbl1.col3 = %(bind1)s")
           .bind(bind1='bind1value'))
 

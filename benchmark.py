@@ -20,10 +20,10 @@ addresses = Table(
 
 
 def sqlalchemy_bench():
-    s = select([users.c.name, users.c.fullname, addresses.c.email_address],
-               users.c.id == addresses.c.user_id)
-    s = s.where(users.c.id > 1)
-    s = s.where(users.c.name.startswith('Justin'))
+    s = (select([users.c.name, users.c.fullname, addresses.c.email_address],
+                users.c.id == addresses.c.user_id)
+         .where(users.c.id > 1)
+         .where(users.c.name.startswith('Justin')))
     return str(s)
 
 
@@ -32,10 +32,9 @@ def norm_bench():
                 'users.fullname',
                 'addresses.email_address')
          .FROM('users')
-         .JOIN('addresses', ON='users.id = addresses.user_id'))
-
-    s = s.WHERE('users.id > %(id)s').bind(id=1)
-    s = s.WHERE("users.name LIKE %(name)s").bind(name='Justin%')
+         .JOIN('addresses', ON='users.id = addresses.user_id')
+         .WHERE('users.id > %(id)s').bind(id=1)
+         .WHERE("users.name LIKE %(name)s").bind(name='Justin%'))
 
     return s.query
 
