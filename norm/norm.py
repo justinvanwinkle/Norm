@@ -136,7 +136,7 @@ class Query:
     def __init__(self):
         self.parent = None
         self.chain = []
-        self._binds = {}
+        self._binds = []
         self._query = None
 
     @classmethod
@@ -144,7 +144,14 @@ class Query:
         return "%s%s%s" % (cls.bind_prefix, s, cls.bind_postfix)
 
     @property
+    def bind_items(self):
+        if self.parent is not None:
+            yield from self.parent.bind_items
+        yield from self._binds
+
+    @property
     def binds(self):
+        return dict(self.bind_items)
         binds = {}
         if self.parent is not None:
             binds.update(self.parent.binds)
@@ -154,7 +161,7 @@ class Query:
 
     def bind(self, **binds):
         s = self.child()
-        s._binds.update(binds)
+        s._binds = list(binds.items())
         return s
 
     def child(self):
@@ -163,8 +170,11 @@ class Query:
         return s
 
     def build_chain(self):
-        parent_chain = self.parent.build_chain() if self.parent else []
-        return parent_chain + self.chain
+        if self.parent is not None:
+            chain = self.parent.build_chain()
+        else:
+            chain = []
+        return chain + self.chain
 
     @property
     def query(self):
@@ -182,7 +192,7 @@ class _SELECT_UPDATE(Query):
         for column_name, value in kw.items():
             column_name = str(column_name)
             bind_val_name = '%s_bind_%s' % (column_name, len(self.binds))
-            self._binds[bind_val_name] = value
+            self._binds.append((bind_val_name, value))
             expr = column_name + ' = ' + self.bnd(bind_val_name)
             s.chain.append((WHERE, expr))
         return s
@@ -284,7 +294,7 @@ class UPDATE(_SELECT_UPDATE):
 
         for column_name, value in kw.items():
             bind_name = column_name + '_bind'
-            self._binds[bind_name] = value
+            self._binds.append((bind_name, value))
             expr = str(column_name) + ' = ' + self.bnd(bind_name)
             s.chain.append((SET, expr))
         return s
