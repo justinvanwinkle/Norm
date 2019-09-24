@@ -34,7 +34,8 @@ def norm_bench():
          .FROM('users')
          .JOIN('addresses', ON='users.id = addresses.user_id')
          .WHERE('users.id > %(id)s').bind(id=1)
-         .WHERE("users.name LIKE %(name)s").bind(name='Justin%'))
+         .WHERE("users.name LIKE %(name)s")
+         .bind(name='Justin%'))
 
     return s.query
 
