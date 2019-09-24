@@ -145,9 +145,10 @@ class Query:
 
     @property
     def bind_items(self):
-        if self.parent is not None:
+        if self.parent is not None and self.parent._binds:
             yield from self.parent.bind_items
-        yield from self._binds
+        if self._binds:
+            yield from self._binds
 
     @property
     def binds(self):

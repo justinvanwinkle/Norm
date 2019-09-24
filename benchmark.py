@@ -20,7 +20,8 @@ addresses = Table(
 
 
 def sqlalchemy_bench():
-    s = select([users, addresses], users.c.id == addresses.c.user_id)
+    s = select([users.c.name, users.c.fullname, addresses.c.email_address],
+               users.c.id == addresses.c.user_id)
     s = s.where(users.c.id > 1)
     s = s.where(users.c.name.startswith('Justin'))
     return str(s)
