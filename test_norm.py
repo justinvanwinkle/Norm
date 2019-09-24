@@ -166,29 +166,12 @@ def test_generate_binds():
         "       salary = %(salary_bind_3)s AND",
         "       tbl1.col3 = %(bind1)s;"])
 
-    expected1_v2 = '\n'.join([
-        "SELECT tbl1.column1 AS col1",
-        "  FROM table1 AS tbl1",
-        " WHERE id = %(id_bind_0)s AND",
-        "       name = %(name_bind_1)s AND",
-        "       salary = %(salary_bind_2)s AND",
-        "       occupation = %(occupation_bind_3)s AND",
-        "       tbl1.col3 = %(bind1)s;"])
-    if s1.query.find('salary') > s1.query.find('occupation'):
-        assert s1.query == expected1_v1
-        assert s1.binds == {'bind1': 'bind1value',
-                            'id_bind_0': 1,
-                            'name_bind_1': 'bossanova',
-                            'occupation_bind_2': 'rascal',
-                            'salary_bind_3': None}
-
-    else:
-        assert s1.query == expected1_v2
-        assert s1.binds == {'bind1': 'bind1value',
-                            'id_bind_0': 1,
-                            'name_bind_1': 'bossanova',
-                            'occupation_bind_3': 'rascal',
-                            'salary_bind_2': None}
+    assert s1.query == expected1_v1
+    assert s1.binds == {'bind1': 'bind1value',
+                        'id_bind_0': 1,
+                        'name_bind_1': 'bossanova',
+                        'occupation_bind_2': 'rascal',
+                        'salary_bind_3': None}
 
 
 def test_generative_query():

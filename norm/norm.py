@@ -1,3 +1,4 @@
+from .cached_property import cached_property
 
 QUERY_TYPE = b'qt'
 COLUMN = b'c'
@@ -347,7 +348,8 @@ class INSERT(object):
 
         for index, d in enumerate(data):
             for col_name in self.columns:
-                key = col_name + '_' + str(index)
+                key = f'{col_name}_{index}'
+
                 if col_name in d:
                     binds[key] = d[col_name]
                 else:
@@ -355,13 +357,13 @@ class INSERT(object):
 
         return binds
 
-    @property
+    @cached_property
     def multi_data(self):
         if hasattr(self.data, 'keys'):
             return False
         return True
 
-    @property
+    @cached_property
     def columns(self):
         if self._columns is None:
             if self.data is None:
@@ -384,6 +386,8 @@ class INSERT(object):
 
     def _query(self, data):
         q = 'INSERT INTO %s ' % self.table
+        pref = self.bind_prefix
+        post = self.bind_postfix
 
         if self.columns:
             q += '('
@@ -401,8 +405,13 @@ class INSERT(object):
                     q += ',\n       '
 
                 q += '('
-                q += ', '.join(self.bnd(col_name + '_' + str(index))
-                               for col_name in self.columns)
+                last_col_ix = len(self.columns) - 1
+                for ix, col_name in enumerate(self.columns):
+                    if last_col_ix != ix:
+                        q += f'{pref}{col_name}_{index}{post}, '
+                    else:
+                        q += f'{pref}{col_name}_{index}{post}'
+
                 q += ')'
 
         if self.returning:
