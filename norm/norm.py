@@ -336,6 +336,7 @@ class INSERT(object):
                  columns=None,
                  statement=None,
                  default=_default,
+                 on_conflict=None,
                  returning=None):
         self.table = table
         self.data = data
@@ -345,6 +346,7 @@ class INSERT(object):
             self.default = self.defaultdefault
         else:
             self.default = default
+        self.on_conflict = on_conflict
         self.returning = returning
 
     @classmethod
@@ -431,6 +433,8 @@ class INSERT(object):
                         q += f'{pref}{col_name}_{index}{post}'
 
                 q += ')'
+        if self.on_conflict:
+            q += f'\nON CONFLICT {self.on_conflict}'
 
         if self.returning:
             if isinstance(self.returning, str):
@@ -438,6 +442,7 @@ class INSERT(object):
             else:
                 returning = self.returning
             q += '\nRETURNING ' + ', '.join(returning)
+
         q += ';'
 
         return q

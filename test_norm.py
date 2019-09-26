@@ -405,3 +405,15 @@ def test_insert_default_values():
     assert i.binds == {}
     assert i.query == ('INSERT INTO table1 '
                        'DEFAULT VALUES;')
+
+
+def test_insert_on_conflict():
+    i = INSERT('table1',
+               data={'col1': 'val1', 'col2': 'val2'},
+               on_conflict='(col1) DO NOTHING')
+
+    assert i.binds == dict(col1_0='val1', col2_0='val2')
+    assert i.query == ('INSERT INTO table1 '
+                       '(col1, col2) '
+                       'VALUES (%(col1_0)s, %(col2_0)s)'
+                       '\nON CONFLICT (col1) DO NOTHING;')
