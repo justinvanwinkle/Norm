@@ -479,3 +479,11 @@ class WITH(Query):
         if self.primary:
             d.update(self.primary.binds)
         return d
+
+
+__all__ = [Query,
+           SELECT,
+           UPDATE,
+           DELETE,
+           INSERT,
+           BogusQuery]

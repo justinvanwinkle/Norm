@@ -38,3 +38,12 @@ class MSSQL_ConnectionProxy(ConnectionProxy):
 
 class MSSQL_ConnectionFactory(ConnectionFactory):
     connection_proxy = MSSQL_ConnectionProxy
+
+
+__all__ = [MSSQL_INSERT,
+           MSSQL_SELECT,
+           MSSQL_UPDATE,
+           MSSQL_DELETE,
+           MSSQL_CursorProxy,
+           MSSQL_ConnectionProxy,
+           MSSQL_ConnectionFactory]

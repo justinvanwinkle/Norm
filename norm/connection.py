@@ -94,3 +94,8 @@ class ConnectionFactory(object):
 
     def __call__(self):
         return self.connection_proxy(self.connection_maker())
+
+
+__all__ = [CursorProxy,
+           ConnectionProxy,
+           ConnectionFactory]

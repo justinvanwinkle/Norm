@@ -25,3 +25,6 @@ class RowsProxy(object):
                 yield row
             else:
                 yield dict(zip(column_names, row))
+
+
+__all__ = [RowsProxy]
