@@ -173,5 +173,5 @@ def get_users(cursor, user_ids, only_girls=False, minimum_age=0):
     if minimum_age:
         s = (s.WHERE('age >= :minimum_age')
              .bind(minimum_age=minimum_age))
-    return conn.run_query(s)
+    return cursor.run_query(s)
 ```
