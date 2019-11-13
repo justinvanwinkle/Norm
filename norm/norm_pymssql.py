@@ -34,3 +34,12 @@ class PYMSSQL_ConnectionProxy(ConnectionProxy):
 
 class PYMSSQL_ConnectionFactory(ConnectionFactory):
     connection_proxy = PYMSSQL_ConnectionProxy
+
+
+__all__ = [PYMSSQL_INSERT,
+           PYMSSQL_SELECT,
+           PYMSSQL_UPDATE,
+           PYMSSQL_DELETE,
+           PYMSSQL_CursorProxy,
+           PYMSSQL_ConnectionProxy,
+           PYMSSQL_ConnectionFactory]

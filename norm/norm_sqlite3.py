@@ -38,3 +38,12 @@ class SQLI_ConnectionProxy(ConnectionProxy):
 
 class SQLI_ConnectionFactory(ConnectionFactory):
     connection_proxy = SQLI_ConnectionProxy
+
+
+__all__ = [SQLI_INSERT,
+           SQLI_SELECT,
+           SQLI_UPDATE,
+           SQLI_DELETE,
+           SQLI_CursorProxy,
+           SQLI_ConnectionProxy,
+           SQLI_ConnectionFactory]

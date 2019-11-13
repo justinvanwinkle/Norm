@@ -1,7 +1,11 @@
 import time
 
-from sqlalchemy import Table, Column, Integer, String, MetaData, ForeignKey
-from sqlalchemy.sql import select
+try:
+    from sqlalchemy import Table, Column, Integer, String, MetaData, ForeignKey
+    from sqlalchemy.sql import select
+except ImportError:
+    # only need these if you want to run the benchmark
+    pass
 
 from norm import SELECT
 

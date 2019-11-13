@@ -33,3 +33,12 @@ class MY_CON_ConnectionProxy(ConnectionProxy):
 
 class MY_CON_ConnectionFactory(ConnectionFactory):
     connection_proxy = MY_CON_ConnectionProxy
+
+
+__all__ = [MY_CON_INSERT,
+           MY_CON_SELECT,
+           MY_CON_UPDATE,
+           MY_CON_DELETE,
+           MY_CON_CursorProxy,
+           MY_CON_ConnectionProxy,
+           MY_CON_ConnectionFactory]

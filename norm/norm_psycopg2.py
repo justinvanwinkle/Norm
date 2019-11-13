@@ -38,3 +38,13 @@ class PG_ConnectionProxy(ConnectionProxy):
 
 class PG_ConnectionFactory(ConnectionFactory):
     connection_proxy = PG_ConnectionProxy
+
+
+__all__ = [DEFAULT,
+           PG_INSERT,
+           PG_SELECT,
+           PG_UPDATE,
+           PG_DELETE,
+           PG_CursorProxy,
+           PG_ConnectionProxy,
+           PG_ConnectionFactory]
