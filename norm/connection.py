@@ -48,7 +48,8 @@ class CursorProxy(object):
         return dict(zip(self.column_names, row))
 
     def __iter__(self):
-        yield from self.cursor
+        for row in self.cursor:
+            yield dict(zip(self.column_names, row))
 
 
 class ConnectionProxy(object):
@@ -63,10 +64,10 @@ class ConnectionProxy(object):
     def cursor(self, *args, **kw):
         return self.cursor_proxy(self.conn.cursor(*args, **kw))
 
-    def execute(self, q, params=None):
+    def execute(self, query, params=None):
         cur = self.cursor()
         try:
-            cur.execute(*_to_query_binds(q, params))
+            cur.execute(query, params)
         finally:
             cur.close()
 
