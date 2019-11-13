@@ -175,3 +175,67 @@ def get_users(cursor, user_ids, only_girls=False, minimum_age=0):
              .bind(minimum_age=minimum_age))
     return cursor.run_query(s)
 ```
+
+Calling methods on a query object does not change the object.  In other words, query objects are immutable.  This means it is always safe to create a base query and add clauses without modifying it.
+
+```python
+
+_user_query = (SELECT('first_name', 'last_name')
+               .FROM('people'))
+
+
+def get_old_people(conn, min_age=65):
+    old_people_query = s.WHERE('age > :min_age').bind(min_age=min_age)
+    return conn.run_query(old_people_query)
+
+
+def get_karls(conn):
+    karl_query = s.WHERE(first_name='Karl')
+    return conn.run_query(karl_query)
+```
+
+
+### UPDATE, DELETE
+
+UPDATE and DELETE work basically the same as SELECT
+
+```python
+fix_karls = (UPDATE('people')
+             .SET(first_name='Karl')
+             .WHERE(first_name='karl'))
+conn.execute(fix_karls)
+```
+
+```python
+remove_karls = (DELETE('people')
+                .WHERE(first_name='Karl'))
+conn.execute(remove_karls)
+```
+
+### INSERT
+Inserts just take dictionaries and treat them like rows.
+
+All the rows are inserted as one large INSERT statement with many bind parameters.  This means that if your database or library doesn't support large numbers of bind parameters, you may have to break the rows you wish to insert into several batches.
+
+```python
+rows = [dict(first_name='bob', last_name='dobs', age=132),
+        dict(first_name='bill, last_name='gates, age=67),
+        dict(first_name='steve', last_name='jobs', age=60),
+        dict(first_name='bob', last_name='jones'),
+        dict(first_name='mike', last_name='jones', age=15)]
+i = INSERT('people', rows)
+conn.execute(i)
+```
+
+The behavior for missing keys depends on the database/library norm backend you are using.  For psycopg2/postgres it will fill in mising keys with DEFAULT.  For most databases which do not provide an AsIs DBAPI wrapper, the default default is None (NULL).  This can be overridden:
+
+```python
+i = INSERT('people', default=AsIs('DEFAULT'))
+```
+
+This should not be used with a value like `5` or something, it is meant to be a way to specify the DEAULT keyword for the library/database you are using.  For psycopg2/postgersql, it will automatically fill in DEFAULT, using http://initd.org/psycopg/docs/extensions.html#psycopg2.extensions.AsIs  For inferior databases there may not be a defined way to do this safely.
+
+
+### WITH (Commont Table Expressions)
+
+Implemented, documentation TBD.
