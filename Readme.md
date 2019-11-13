@@ -165,10 +165,13 @@ s = (SELECT('val')
 Or you can evolve queries dynamically:
 
 ```python
-def get_users(cursor, user_ids, only_girls=False):
+def get_users(cursor, user_ids, only_girls=False, minimum_age=0):
     s = (SELECT('first_name', 'age')
          .FROM('people'))
     if only_girls:
         s = s.WHERE(gender='f')
+    if minimum_age:
+        s = (s.WHERE('age >= :minimum_age')
+             .bind(minimum_age=minimum_age))
     return conn.run_query(s)
 ```
