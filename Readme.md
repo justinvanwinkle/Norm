@@ -233,7 +233,7 @@ The behavior for missing keys depends on the database/library norm backend you a
 i = INSERT('people', default=AsIs('DEFAULT'))
 ```
 
-This should not be used with a value like `5` or something, it is meant to be a way to specify the DEAULT keyword for the library/database you are using.  For psycopg2/postgersql, it will automatically fill in DEFAULT, using http://initd.org/psycopg/docs/extensions.html#psycopg2.extensions.AsIs  For inferior databases there may not be a defined way to do this safely.
+This should not be used with a value like `5` or something, it is meant to be a way to specify the DEAULT keyword for the library/database you are using.  For psycopg2/postgresql, it will automatically fill in DEFAULT, using http://initd.org/psycopg/docs/extensions.html#psycopg2.extensions.AsIs  For inferior databases there may not be a defined way to do this safely.
 
 
 ### WITH (Commont Table Expressions)
