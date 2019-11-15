@@ -18,7 +18,15 @@ def make_rows():
 
 
 def test_grouping():
+    empty_rp = RowsProxy([], column_names)
+    assert len(empty_rp) == 0
+    assert not bool(empty_rp)
+
     rp = RowsProxy(make_rows(), column_names)
+
+    assert len(rp) == 8
+    assert bool(rp)
+
     id_score_map = {}
     for user_id, rows in rp('user_id'):
         scores = []

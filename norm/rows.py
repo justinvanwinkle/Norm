@@ -6,6 +6,9 @@ class RowsProxy(object):
         self.rows = rows
         self.column_names = column_names
 
+    def __len__(self):
+        return len(self.rows)
+
     def __call__(self, *args):
         def key_func(row):
             if len(args) == 1:
