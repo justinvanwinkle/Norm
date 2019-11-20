@@ -260,9 +260,10 @@ class SELECT(_SELECT_UPDATE):
             s.chain.append((COLUMN, stmt))
         return s
 
-    def HAVING(self, stmt):
+    def HAVING(self, *args):
         s = self.child()
-        s.chain.append((HAVING, stmt))
+        for arg in args:
+            s.chain.append((HAVING, arg))
         return s
 
     def ORDER_BY(self, stmt):

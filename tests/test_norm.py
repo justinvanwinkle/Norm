@@ -90,7 +90,7 @@ def test_all_select_methods():
         "GROUP BY table2.blah,",
         "         col1",
         "HAVING count(*) > 5 AND",
-        "       count(*) > 5",
+        "       count(*) > 6",
         "ORDER BY count(*)",
         " LIMIT 5",
         "OFFSET 3;"])
