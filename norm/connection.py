@@ -24,14 +24,19 @@ class CursorProxy(object):
         return [d[0] for d in self.description]
 
     def execute(self, query, params=None):
-        return self.cursor.execute(*_to_query_binds(query, params))
+        sql_query, sql_binds = _to_query_binds(query, params)
+        if sql_binds:
+            res = self.cursor.execute(sql_query, sql_binds)
+        else:
+            res = self.cursor.execute(sql_query)
+        return res
 
     def run_query(self, query, params=None):
-        self.execute(*_to_query_binds(query, params))
+        self.execute(query, params)
         return self.fetchall()
 
     def run_queryone(self, query, params=None):
-        self.execute(*_to_query_binds(query, params))
+        self.execute(query, params)
         result = self.fetchone()
         return result
 
