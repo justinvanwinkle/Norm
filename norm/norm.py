@@ -20,6 +20,10 @@ DELETE_QT = b'd'
 INSERT_QT = b'i'
 
 SEP = '\n       '
+WHERE_SEP = ' AND\n       '
+GROUP_BY_SEP = ',\n         '
+ORDER_BY_SEP = ',\n         '
+HAVING_SEP = ' AND\n       '
 COLUMN_SEP = ',' + SEP
 INSERT_COLUMNS_SEP = ',\n   '
 INSERT_VALUES_SEP = ',\n          '
@@ -39,9 +43,9 @@ def compile(chain, query_type):
     columns = []
     from_ = []
     where = []
-    having = None
-    group_by = None
-    order_by = None
+    having = []
+    group_by = []
+    order_by = []
     limit = None
     offset = None
     set_ = []
@@ -62,21 +66,21 @@ def compile(chain, query_type):
             else:
                 from_[-1] += '\n  ' + join + ' ' + expr
                 if op is not None:
-                    from_[-1] += '\n       ' + op + ' ' + criteria
+                    from_[-1] += SEP + op + ' ' + criteria
         elif op == TABLE:
             table = option
         elif op == SET:
             set_.append(option)
         elif op == GROUP_BY:
-            group_by = option
+            group_by.append(option)
         elif op == ORDER_BY:
-            order_by = option
+            order_by.append(option)
         elif op == LIMIT:
             limit = option
         elif op == OFFSET:
             offset = option
         elif op == HAVING:
-            having = option
+            having.append(option)
         elif op == EXTRA:
             extra.append(option)
         elif op == RETURNING:
@@ -90,13 +94,13 @@ def compile(chain, query_type):
         if from_:
             query += '\n  FROM ' + SEP.join(from_)
         if where:
-            query += '\n WHERE ' + (' AND' + SEP).join(where)
-        if group_by is not None:
-            query += '\nGROUP BY ' + group_by
-        if having is not None:
-            query += '\nHAVING ' + having
-        if order_by is not None:
-            query += '\nORDER BY ' + order_by
+            query += '\n WHERE ' + WHERE_SEP.join(where)
+        if group_by:
+            query += '\nGROUP BY ' + GROUP_BY_SEP.join(group_by)
+        if having:
+            query += '\nHAVING ' + HAVING_SEP.join(having)
+        if order_by:
+            query += '\nORDER BY ' + ORDER_BY_SEP.join(order_by)
         if limit is not None:
             query += '\n LIMIT ' + limit
         if offset is not None:
@@ -110,7 +114,7 @@ def compile(chain, query_type):
         if from_:
             query += '\n  FROM ' + SEP.join(from_)
         if where:
-            query += '\n WHERE ' + (' AND' + SEP).join(where)
+            query += '\n WHERE ' + WHERE_SEP.join(where)
         if extra:
             query += '\n'.join(extra)
         if returning:
@@ -120,7 +124,7 @@ def compile(chain, query_type):
         if from_:
             query += '\n  FROM ' + SEP.join(from_)
         if where:
-            query += '\n WHERE ' + (' AND' + SEP).join(where)
+            query += '\n WHERE ' + WHERE_SEP.join(where)
         if returning:
             query += '\nRETURNING ' + ', '.join(returning)
 
@@ -266,9 +270,10 @@ class SELECT(_SELECT_UPDATE):
         s.chain.append((ORDER_BY, stmt))
         return s
 
-    def GROUP_BY(self, stmt):
+    def GROUP_BY(self, *args):
         s = self.child()
-        s.chain.append((GROUP_BY, stmt))
+        for arg in args:
+            s.chain.append((GROUP_BY, arg))
         return s
 
     def LIMIT(self, stmt):
