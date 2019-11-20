@@ -73,7 +73,8 @@ def test_all_select_methods():
          .WHERE("tbl1.col2 = 'testval'")
          .JOIN("table2", ON="table2.blah = tbl1.col2")
          .SELECT("table2.blah")
-         .HAVING("count(*) > 5")
+         .HAVING("count(*) > 5",
+                 "count(*) > 6")
          .GROUP_BY("table2.blah", "col1")
          .ORDER_BY("count(*)")
          .LIMIT(5)
@@ -88,7 +89,8 @@ def test_all_select_methods():
         " WHERE tbl1.col2 = 'testval'",
         "GROUP BY table2.blah,",
         "         col1",
-        "HAVING count(*) > 5",
+        "HAVING count(*) > 5 AND",
+        "       count(*) > 5",
         "ORDER BY count(*)",
         " LIMIT 5",
         "OFFSET 3;"])
