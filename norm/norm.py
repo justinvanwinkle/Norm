@@ -266,9 +266,10 @@ class SELECT(_SELECT_UPDATE):
             s.chain.append((HAVING, arg))
         return s
 
-    def ORDER_BY(self, stmt):
+    def ORDER_BY(self, *args):
         s = self.child()
-        s.chain.append((ORDER_BY, stmt))
+        for arg in args:
+            s.chain.append((ORDER_BY, arg))
         return s
 
     def GROUP_BY(self, *args):
