@@ -411,10 +411,11 @@ class INSERT(object):
         else:
             return self._query([self.data])
 
+    def _bind_param_name(self, col_name, index):
+        return f'{self.bind_prefix}{col_name}_{index}{self.bind_postfix}'
+
     def _query(self, data):
         q = 'INSERT INTO %s ' % self.table
-        pref = self.bind_prefix
-        post = self.bind_postfix
 
         if self.columns:
             q += '('
@@ -434,10 +435,9 @@ class INSERT(object):
                 q += '('
                 last_col_ix = len(self.columns) - 1
                 for ix, col_name in enumerate(self.columns):
+                    q += self._bind_param_name(col_name, index)
                     if last_col_ix != ix:
-                        q += f'{pref}{col_name}_{index}{post}, '
-                    else:
-                        q += f'{pref}{col_name}_{index}{post}'
+                        q += ', '
 
                 q += ')'
         if self.on_conflict:
