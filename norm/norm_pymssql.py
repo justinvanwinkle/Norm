@@ -38,6 +38,10 @@ class PYMSSQL_INSERT(INSERT):
             self.encrypted_columns = set(encrypted_columns)
         self.encryption_key = encryption_key
 
+        if self.encrypted_columns and not self.encryption_key:
+            raise RuntimeError('You must supply an encryption key name when'
+                               ' using encrypted columns')
+
     def _bind_param_name(self, col_name, index):
         bind = f'{self.bind_prefix}{col_name}_{index}{self.bind_postfix}'
         if col_name in self.encrypted_columns:
