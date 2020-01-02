@@ -396,12 +396,12 @@ class INSERT(object):
             if self.data is None:
                 return None
             if not self.multi_data:
-                return sorted([key for key in self.data])
+                return list(sorted([key for key in self.data]))
             else:
                 columns = set()
                 for d in self.data:
                     columns |= set(d)
-                self._columns = sorted(columns)
+                self._columns = list(sorted(columns))
         return self._columns
 
     @property
