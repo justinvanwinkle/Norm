@@ -10,7 +10,7 @@ from norm.connection import CursorProxy
 
 
 _encrypt_statement = (
-    "EncryptByKey(Key_GUID('{key_name}'), CAST({bind} AS VARCHAR(4000))")
+    "EncryptByKey(Key_GUID('{key_name}'), CAST({bind} AS VARCHAR(4000)))")
 
 
 class PYMSSQL_INSERT(INSERT):
