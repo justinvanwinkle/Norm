@@ -4,6 +4,7 @@ from norm import SELECT
 from norm import UPDATE
 from norm import DELETE
 from norm import INSERT
+from norm.norm import NormAsIs
 
 
 def test_simple_select():
@@ -423,3 +424,12 @@ def test_insert_on_conflict():
                        '(col1, col2) '
                        'VALUES (%(col1_0)s, %(col2_0)s)'
                        '\nON CONFLICT (col1) DO NOTHING;')
+
+
+def test_asis():
+    row = {'name': NormAsIs('DEFAULT'), 'zipcode': 23344}
+
+    i = INSERT('table1', data=[row])
+    assert i.query == ('INSERT INTO table1 (name, zipcode) '
+                       'VALUES (DEFAULT, %(zipcode_0)s);')
+    assert i.binds == {'zipcode_0': 23344}

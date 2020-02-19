@@ -11,9 +11,14 @@ from .connection import CursorProxy
 
 DEFAULT = AsIs('DEFAULT')
 
+PG_NormAsIs = AsIs
+
 
 class PG_INSERT(INSERT):
     defaultdefault = DEFAULT
+
+    def _is_asis(self, val):
+        return False
 
 
 class PG_SELECT(SELECT):

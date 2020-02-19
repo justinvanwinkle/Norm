@@ -29,6 +29,22 @@ INSERT_COLUMNS_SEP = ',\n   '
 INSERT_VALUES_SEP = ',\n          '
 
 
+class NormAsIs:
+    def __init__(self, value):
+        self.value = value
+
+    def __repr__(self):
+        return f'AsIs({repr(self.value)})'
+
+    def __eq__(self, o):
+        try:
+            if o.value == self.value:
+                return True
+            return False
+        except AttributeError:
+            return False
+
+
 class BogusQuery(Exception):
     pass
 
@@ -378,7 +394,8 @@ class INSERT(object):
                 key = f'{col_name}_{index}'
 
                 if col_name in d:
-                    binds[key] = d[col_name]
+                    if not self._is_asis(d[col_name]):
+                        binds[key] = d[col_name]
                 else:
                     binds[key] = self.default
 
@@ -414,6 +431,11 @@ class INSERT(object):
     def _bind_param_name(self, col_name, index):
         return f'{self.bind_prefix}{col_name}_{index}{self.bind_postfix}'
 
+    def _is_asis(self, val):
+        if isinstance(val, NormAsIs):
+            return True
+        return False
+
     def _query(self, data):
         q = 'INSERT INTO %s ' % self.table
 
@@ -435,7 +457,10 @@ class INSERT(object):
                 q += '('
                 last_col_ix = len(self.columns) - 1
                 for ix, col_name in enumerate(self.columns):
-                    q += self._bind_param_name(col_name, index)
+                    if self._is_asis(d.get(col_name)):
+                        q += d.get(col_name).value
+                    else:
+                        q += self._bind_param_name(col_name, index)
                     if last_col_ix != ix:
                         q += ', '
 

@@ -4,10 +4,13 @@ from norm.norm import INSERT
 from norm.norm import UPDATE
 from norm.norm import DELETE
 from norm.norm import _default
+from norm.norm import NormAsIs
 from norm.connection import ConnectionFactory
 from norm.connection import ConnectionProxy
 from norm.connection import CursorProxy
 
+
+PYMSSQL_AsIs = NormAsIs
 
 _encrypt_statement = (
     "EncryptByKey(Key_GUID('{key_name}'), CAST({bind} AS VARCHAR(4000)))")
