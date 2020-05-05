@@ -167,12 +167,30 @@ Or you can evolve queries dynamically:
 ```python
 def get_users(cursor, user_ids, only_girls=False, minimum_age=0):
     s = (SELECT('first_name', 'age')
-         .FROM('people'))
+         .FROM('people')
+         .WHERE('user_ids IN :user_ids')
+         .bind(user_ids=user_ids))
     if only_girls:
         s = s.WHERE(gender='f')
     if minimum_age:
         s = (s.WHERE('age >= :minimum_age')
              .bind(minimum_age=minimum_age))
+    return cursor.run_query(s)
+```
+
+You can also add `SELECT` statements dynamically.
+
+```python
+def get_users(cursor, user_ids, has_dog=False):
+    s = (SELECT('p.first_name', 'p.age')
+         .FROM('p.people')
+         .WHERE('user_ids IN :user_ids')
+         .bind(user_ids=user_ids))
+
+    if has_dog:
+        s = (s.SELECT('d.dog_name', 'd.breed')
+             .JOIN('dogs as d', ON='p.person_id = d.owner_id'))
+
     return cursor.run_query(s)
 ```
 
@@ -235,7 +253,56 @@ i = INSERT('people', default=AsIs('DEFAULT'))
 
 This should not be used with a value like `5` or something, it is meant to be a way to specify the DEAULT keyword for the library/database you are using.  For psycopg2/postgresql, it will automatically fill in DEFAULT, using http://initd.org/psycopg/docs/extensions.html#psycopg2.extensions.AsIs  For inferior databases there may not be a defined way to do this safely.
 
+#### INSERT CURRENT DB DATETIME
+
+There is currently no way to signify that the datetime of the DB should be inserted for a field. Instead of using messy conversions, there is still a way to get there with norm! Query the DB date and/or time and save it as a variable. You can then use that variable when inserting into the DB.
+
+Below is an example of using pymssql's `GETDATE()`:
+
+```python
+db_date = conn.run_queryone('SELECT GETDATE() as curDate')['curDate']
+rows = [dict(first_name='Ada', last_name='Lovelace', current_date=db_date),
+        dict(first_name='Grace', last_name='Hopper', current_date=db_date),
+        dict(first_name='Anita', last_name='Borg', current_date=db_date),
+        dict(first_name='Janie', last_name='Tsao', current_date=db_date),
+        dict(first_name='Katherine', last_name='Johnson', current_date=db_date)]
+i = INSERT('people', rows)
+conn.execute(i)
+```
+
 
 ### WITH (Commont Table Expressions)
 
 Implemented, documentation TBD.
+
+### LIMIT
+
+Implemented, documentation TBD.
+
+#### LIMIT vs. TOP
+
+While many SQL flavors prefer `LIMIT`, pymssql favors `TOP`. When creating your `SELECT` statment using norm, you need to pass it in as part of the select statement. Include `TOP #` with the first field.
+
+For instance, if you only want to return one result, you would write the following:
+
+```python
+s = (SELECT('TOP 1 FirstName as first_name',
+            'LastName as last_name'))
+     .FROM('people')
+row = conn.run_queryone(s)
+print(row)
+# prints: {'first_name': 'Ada', 'last_name': 'Lovelace'}
+```
+
+
+If you only want to return five results, you would write the following:
+
+```python
+query = (
+    SELECT('TOP 5 FirstName as first_name',
+           'LastName as last_name')
+    .FROM('people'))
+rows = conn.run_queryone(query)
+print(list(rows))
+# prints : [{'first_name': 'Ada', 'last_name': 'Lovelace'}, {'first_name': 'Grace', 'last_name': 'Hopper'}, {'first_name': 'Anita', 'last_name': 'Borg'}, {'first_name': 'Janie', 'last_name': 'Tsao'}, {'first_name': 'Katherine', 'last_name': 'Johnson'}]
+```
