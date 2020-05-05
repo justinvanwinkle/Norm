@@ -120,6 +120,28 @@ print(s.binds)
 # prints: {'val_bind_0': 5}
 ```
 
+You can also write the above binds as:
+
+```python
+# mssql, SQLAlchemy, sqlite3
+s = (SELECT('val')
+     .FROM('foos')
+     .WHERE('val = :x')
+     .binds(x=5))
+print(list(conn.run_query(s)))
+# prints: [{'val': '5'}]
+
+
+
+# psycopg2, pymssql
+s = (SELECT('val')
+     .FROM('foos')
+     .WHERE('val = %(x)s')
+     .binds(x=5))
+print(list(conn.run_query(s)))
+# prints: [{'val': '5'}]
+```
+
 Using .query and .binds seperately lets you use norm wherever you can execute SQL.  For example, with a SQLAlchemy Session object:
 
 ```python
@@ -306,3 +328,89 @@ rows = conn.run_queryone(query)
 print(list(rows))
 # prints : [{'first_name': 'Ada', 'last_name': 'Lovelace'}, {'first_name': 'Grace', 'last_name': 'Hopper'}, {'first_name': 'Anita', 'last_name': 'Borg'}, {'first_name': 'Janie', 'last_name': 'Tsao'}, {'first_name': 'Katherine', 'last_name': 'Johnson'}]
 ```
+
+### More binds examples
+
+Bind variables are the best way to prevent SQL injection, so use them. Each SQL flavor has a specific syntax for bind parameters. Norm supports these syntaxes. They are denoted by `bind_prefix` and `bind_postfix` in [norm.py](https://github.com/justinvanwinkle/Norm/blob/master/norm/norm.py#L153) or their respective files.
+
+
+Below are examples for binding according to SQL flavor:
+
+
+#### mssql
+
+```python
+fix_karls = (UPDATE('people')
+             .SET('first_name = :x')
+             .WHERE(first_name='karl')
+             .binds(x='Karl'))
+conn.execute(fix_karls)
+
+remove_karls = (DELETE('people')
+                .WHERE('first_name = :x')
+                .binds(x='Karl'))
+conn.execute(remove_karls)
+```
+
+#### psycopg2
+```python
+fix_karls = (UPDATE('people')
+             .SET('first_name = %(x)s')
+             .WHERE(first_name='karl')
+             .binds(x='Karl'))
+conn.execute(fix_karls)
+
+
+remove_karls = (DELETE('people')
+                .WHERE('first_name = %(x)s')
+                .binds(x='Karl'))
+conn.execute(remove_karls)
+```
+
+#### pymssql
+```python
+fix_karls = (UPDATE('people')
+             .SET('first_name = %(x)s')
+             .WHERE(first_name='karl')
+             .binds(x='Karl'))
+conn.execute(fix_karls)
+
+
+remove_karls = (DELETE('people')
+                .WHERE('first_name = %(x)s')
+                .binds(x='Karl'))
+conn.execute(remove_karls)
+```
+
+#### SQLAlchemy
+```python
+fix_karls = (UPDATE('people')
+             .SET('first_name = :x')
+             .WHERE(first_name='karl')
+             .binds(x='Karl'))
+conn.execute(fix_karls)
+
+remove_karls = (DELETE('people')
+                .WHERE('first_name = :x')
+                .binds(x='Karl'))
+conn.execute(remove_karls)
+```
+
+#### sqlite3
+```python
+fix_karls = (UPDATE('people')
+             .SET('first_name = :x')
+             .WHERE(first_name='karl')
+             .binds(x='Karl'))
+conn.execute(fix_karls)
+
+remove_karls = (DELETE('people')
+                .WHERE('first_name = :x')
+                .binds(x='Karl'))
+conn.execute(remove_karls)
+```
+
+
+
+
+
