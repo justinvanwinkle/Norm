@@ -409,8 +409,3 @@ remove_karls = (DELETE('people')
                 .binds(x='Karl'))
 conn.execute(remove_karls)
 ```
-
-
-
-
-
