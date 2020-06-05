@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "norm"
-version = "1.4.5"
+version = "1.4.6"
 description = "Easy peasy SQL generation"
 authors = ["Justin Van Winkle <justin.vanwinkle@gmail.com>"]
 license = "MIT"
