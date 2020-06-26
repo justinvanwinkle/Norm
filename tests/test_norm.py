@@ -493,5 +493,4 @@ def test_with_multiple():
     w = WITH(cte_table_1=s1, cte_table_2=s2)
     w = w(SELECT('ct1.row1').FROM('cte_table_1 ct1'))
 
-    print(w.query)
     assert w.query == with_multiple_query
