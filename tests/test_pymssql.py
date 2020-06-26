@@ -9,7 +9,7 @@ def test_insert():
     i = INSERT('my_table', rows)
 
     assert i.query == (
-        'INSERT INTO my_table (bub, test) VALUES (%(bub_0)s, %(test_0)s);')
+        'INSERT INTO my_table (bub, test)\n  VALUES\n(%(bub_0)s, %(test_0)s);')
 
 
 def test_encrypted_insert():
@@ -18,8 +18,9 @@ def test_encrypted_insert():
                encrypted_columns=['bub'],
                encryption_key='fookey')
     assert i.query == (
-        'INSERT INTO my_table (bub, test)'
-        " VALUES (EncryptByKey(Key_GUID('fookey'),"
+        'INSERT INTO my_table (bub, test)\n'
+        "  VALUES\n"
+        "(EncryptByKey(Key_GUID('fookey'),"
         ' CAST(%(bub_0)s AS VARCHAR(4000))), %(test_0)s);')
 
 

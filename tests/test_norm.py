@@ -4,6 +4,7 @@ from norm import SELECT
 from norm import UPDATE
 from norm import DELETE
 from norm import INSERT
+from norm import WITH
 from norm.norm import NormAsIs
 
 
@@ -348,8 +349,9 @@ def test_basic_insert():
     i = INSERT('table1', data=row1)
 
     assert i.binds == {'name_0': 'justin', 'zipcode_0': 23344}
-    assert i.query == ('INSERT INTO table1 '
-                       '(name, zipcode) VALUES (%(name_0)s, %(zipcode_0)s);')
+    assert i.query == ('INSERT INTO table1 (name, zipcode)\n'
+                       '  VALUES\n'
+                       '(%(name_0)s, %(zipcode_0)s);')
 
 
 def test_multi_insert():
@@ -361,10 +363,10 @@ def test_multi_insert():
                        'phone_1': '1112223333',
                        'zipcode_1': None}
 
-    assert i.query == ('INSERT INTO table1 '
-                       '(name, phone, zipcode) '
-                       'VALUES (%(name_0)s, %(phone_0)s, %(zipcode_0)s),\n'
-                       '       (%(name_1)s, %(phone_1)s, %(zipcode_1)s);')
+    assert i.query == ('INSERT INTO table1 (name, phone, zipcode)\n'
+                       '  VALUES\n'
+                       '(%(name_0)s, %(phone_0)s, %(zipcode_0)s),\n'
+                       '(%(name_1)s, %(phone_1)s, %(zipcode_1)s);')
 
 
 def test_setting_default():
@@ -380,8 +382,9 @@ def test_setting_default():
 def test_setting_columns():
     i = INSERT('table1', data=row1, columns=['name', 'address'])
     assert i.binds == {'name_0': 'justin', 'address_0': None}
-    assert i.query == ('INSERT INTO table1 '
-                       '(name, address) VALUES (%(name_0)s, %(address_0)s);')
+    assert i.query == ('INSERT INTO table1 (name, address)\n'
+                       '  VALUES\n'
+                       '(%(name_0)s, %(address_0)s);')
 
 
 def test_setting_columns_default():
@@ -389,10 +392,10 @@ def test_setting_columns_default():
     assert i.binds == {'phone_0': 'blah',
                        'phone_1': '1112223333'}
 
-    assert i.query == ('INSERT INTO table1 '
-                       '(phone) '
-                       'VALUES (%(phone_0)s),\n'
-                       '       (%(phone_1)s);')
+    assert i.query == ('INSERT INTO table1 (phone)\n'
+                       '  VALUES\n'
+                       '(%(phone_0)s),\n'
+                       '(%(phone_1)s);')
 
 
 def test_insert_no_columns():
@@ -400,18 +403,17 @@ def test_insert_no_columns():
     assert i.binds == {'phone_0': 'blah',
                        'phone_1': '1112223333'}
 
-    assert i.query == ('INSERT INTO table1 '
-                       '(phone) '
-                       'VALUES (%(phone_0)s),\n'
-                       '       (%(phone_1)s);')
+    assert i.query == ('INSERT INTO table1 (phone)\n'
+                       '  VALUES\n'
+                       '(%(phone_0)s),\n'
+                       '(%(phone_1)s);')
 
 
 def test_insert_default_values():
     i = INSERT('table1')
 
     assert i.binds == {}
-    assert i.query == ('INSERT INTO table1 '
-                       'DEFAULT VALUES;')
+    assert i.query == 'INSERT INTO table1 DEFAULT VALUES;'
 
 
 def test_insert_on_conflict():
@@ -420,16 +422,76 @@ def test_insert_on_conflict():
                on_conflict='(col1) DO NOTHING')
 
     assert i.binds == dict(col1_0='val1', col2_0='val2')
-    assert i.query == ('INSERT INTO table1 '
-                       '(col1, col2) '
-                       'VALUES (%(col1_0)s, %(col2_0)s)'
+    assert i.query == ('INSERT INTO table1 (col1, col2)\n'
+                       '  VALUES\n'
+                       '(%(col1_0)s, %(col2_0)s)'
                        '\nON CONFLICT (col1) DO NOTHING;')
 
 
-def test_asis():
-    row = {'name': NormAsIs('DEFAULT'), 'zipcode': 23344}
+def test_asis_insert():
+    row = {'name': NormAsIs('now()'), 'zipcode': 23344}
 
     i = INSERT('table1', data=[row])
-    assert i.query == ('INSERT INTO table1 (name, zipcode) '
-                       'VALUES (DEFAULT, %(zipcode_0)s);')
+    assert i.query == ('INSERT INTO table1 (name, zipcode)\n'
+                       '  VALUES\n'
+                       '(now(), %(zipcode_0)s);')
     assert i.binds == {'zipcode_0': 23344}
+
+
+test_with_query = """\
+WITH my_fake_table AS
+       (UPDATE sometable
+           SET foo = %(foo_bind)s
+        RETURNING foo, bar, whatever)
+
+INSERT INTO my_table (foo, bar, whatever)
+  SELECT foo,
+         bub,
+         derp
+    FROM my_fake_table;"""
+
+
+def test_with():
+    u = (UPDATE('sometable')
+         .SET(foo='123')
+         .RETURNING('foo', 'bar', 'whatever'))
+    w = WITH(my_fake_table=u)
+    w = w(INSERT('my_table',
+                 columns=('foo', 'bar', 'whatever'),
+                 statement=SELECT('foo', 'bub', 'derp')
+                 .FROM('my_fake_table')))
+
+    assert w.query == test_with_query
+
+
+with_multiple_query = """\
+WITH cte_table_1 AS
+       (SELECT mt.row1,
+               mt.row2 AS row2
+          FROM mytable AS mt
+          JOIN othertable AS ot
+               ON ot.bub = mt.foo
+         WHERE 1 = 1),
+     cte_table_2 AS
+       (SELECT mt.row1,
+               mt.row2 AS row2
+          FROM mytable AS mt)
+
+SELECT ct1.row1
+  FROM cte_table_1 ct1;"""
+
+
+def test_with_multiple():
+    s1 = (SELECT('mt.row1', 'mt.row2 AS row2')
+          .FROM('mytable AS mt')
+          .JOIN('othertable AS ot',
+                ON='ot.bub = mt.foo')
+          .WHERE('1 = 1'))
+    s2 = (SELECT('mt.row1', 'mt.row2 AS row2')
+          .FROM('mytable AS mt'))
+
+    w = WITH(cte_table_1=s1, cte_table_2=s2)
+    w = w(SELECT('ct1.row1').FROM('cte_table_1 ct1'))
+
+    print(w.query)
+    assert w.query == with_multiple_query

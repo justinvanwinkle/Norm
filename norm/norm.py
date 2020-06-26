@@ -442,17 +442,17 @@ class INSERT(object):
         if self.columns:
             q += '('
             q += ', '.join(col_name for col_name in self.columns)
-            q += ') '
+            q += ')'
 
         if self.statement:
             q += '\n' + indent_string(self.statement.query[:-1], 2)
         elif self.data is None:
             q += 'DEFAULT VALUES'
         else:
-            q += 'VALUES '
+            q += '\n  VALUES\n'
             for index, d in enumerate(data):
                 if index > 0:
-                    q += ',\n       '
+                    q += ',\n'
 
                 q += '('
                 last_col_ix = len(self.columns) - 1
@@ -495,13 +495,12 @@ class WITH(Query):
         parts = []
         for name, query in self.tables.items():
             query_part = query.query[:-1]  # TODO: HACK!
-            query_section = indent_string(f'({query_part})\n', 7)
+            query_section = indent_string(f'({query_part})\n', 8)[1:]
             parts.append(f'{name} AS\n{query_section}')
         return ('WITH ' +
                 ',\n     '.join(parts) +
                 '\n\n' +
-                self.primary.query +
-                ';')
+                self.primary.query)
 
     @property
     def binds(self):
@@ -518,4 +517,5 @@ __all__ = [Query,
            UPDATE,
            DELETE,
            INSERT,
+           WITH,
            BogusQuery]
