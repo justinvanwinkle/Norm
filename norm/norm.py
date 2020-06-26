@@ -344,11 +344,11 @@ class DELETE(_SELECT_UPDATE):
             self.chain.append((TABLE, table))
 
 
-class _default(object):
+class _default:
     pass
 
 
-class INSERT(object):
+class INSERT:
     bind_prefix = '%('
     bind_postfix = ')s'
     defaultdefault = None
