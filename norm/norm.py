@@ -181,12 +181,6 @@ class Query:
     @property
     def binds(self):
         return dict(self.bind_items)
-        # binds = {}
-        # if self.parent is not None:
-        #     binds.update(self.parent.binds)
-        # binds.update(self._binds)
-
-        # return binds
 
     def bind(self, **binds):
         s = self.child()
