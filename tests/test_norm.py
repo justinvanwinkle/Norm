@@ -100,6 +100,35 @@ def test_all_select_methods():
     assert s.query == expected
 
 
+def test_top_select():
+    s = (SELECT("tbl1.column1 AS col1")
+         .FROM("table1 AS tbl1")
+         .WHERE("tbl1.col2 = 'testval'")
+         .JOIN("table2", ON="table2.blah = tbl1.col2")
+         .SELECT("table2.blah")
+         .HAVING("count(*) > 5",
+                 "count(*) > 6")
+         .GROUP_BY("table2.blah", "col1")
+         .ORDER_BY("count(*)")
+         .TOP(5))
+
+    expected = '\n'.join([
+        "SELECT TOP 5",
+        "       tbl1.column1 AS col1,",
+        "       table2.blah",
+        "  FROM table1 AS tbl1",
+        "  JOIN table2",
+        "       ON table2.blah = tbl1.col2",
+        " WHERE tbl1.col2 = 'testval'",
+        "GROUP BY table2.blah,",
+        "         col1",
+        "HAVING count(*) > 5 AND",
+        "       count(*) > 6",
+        "ORDER BY count(*);"])
+
+    assert s.query == expected
+
+
 def test_overwriting_select_methods_overwrite():
     s = (SELECT("tbl1.column1 AS col1")
          .FROM("table1 AS tbl1")
@@ -112,13 +141,16 @@ def test_overwriting_select_methods_overwrite():
          .GROUP_BY("table2.blah")
          .ORDER_BY("STILL BAD")
          .ORDER_BY("count(*)")
+         .TOP('no way')
+         .TOP(2)
          .LIMIT('no way')
          .LIMIT(5)
          .OFFSET('should not see this')
          .OFFSET(3))
 
     expected = '\n'.join([
-        "SELECT tbl1.column1 AS col1,",
+        "SELECT TOP 2",
+        "       tbl1.column1 AS col1,",
         "       table2.blah",
         "  FROM table1 AS tbl1",
         "  JOIN table2",

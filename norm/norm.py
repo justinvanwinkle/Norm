@@ -7,6 +7,7 @@ WHERE = b'w'
 HAVING = b'h'
 GROUP_BY = b'gb'
 ORDER_BY = b'ob'
+TOP = b'top'
 LIMIT = b'l'
 OFFSET = b'os'
 EXTRA = b'ex'
@@ -62,6 +63,7 @@ def compile(chain, query_type):
     having = []
     group_by = []
     order_by = []
+    top = None
     limit = None
     offset = None
     set_ = []
@@ -91,6 +93,8 @@ def compile(chain, query_type):
             group_by.append(option)
         elif op == ORDER_BY:
             order_by.append(option)
+        elif op == TOP:
+            top = option
         elif op == LIMIT:
             limit = option
         elif op == OFFSET:
@@ -106,7 +110,12 @@ def compile(chain, query_type):
 
     query = ''
     if query_type == SELECT_QT:
-        query += 'SELECT ' + COLUMN_SEP.join(columns)
+        query += 'SELECT '
+        if top is not None:
+            query += 'TOP ' + top + SEP
+
+        query += COLUMN_SEP.join(columns)
+
         if from_:
             query += '\n  FROM ' + SEP.join(from_)
         if where:
@@ -286,6 +295,13 @@ class SELECT(_SELECT_UPDATE):
         s = self.child()
         for arg in args:
             s.chain.append((GROUP_BY, arg))
+        return s
+
+    def TOP(self, stmt):
+        if isinstance(stmt, int):
+            stmt = str(stmt)
+        s = self.child()
+        s.chain.append((TOP, stmt))
         return s
 
     def LIMIT(self, stmt):
