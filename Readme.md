@@ -281,16 +281,17 @@ Implemented, documentation TBD.
 
 #### LIMIT vs. TOP
 
-While many SQL flavors prefer `LIMIT`, pymssql favors `TOP`. When creating your `SELECT` statment using norm, you need to pass it in as part of the select statement. Include `TOP #` with the first field.
+While many SQL flavors prefer `LIMIT`, MS SQL Server favors `TOP`.
 
 For instance, if you only want to return one result, you would write the following:
 
 ```python
-s = (SELECT('TOP 1 FirstName as first_name',
-            'LastName as last_name'))
+s = (SELECT('FirstName as first_name',
+            'LastName as last_name')
      .FROM('people')
-row = conn.run_queryone(s)
-print(row)
+     .TOP(1))
+print(conn.run_queryone(s))
+
 # prints: {'first_name': 'Ada', 'last_name': 'Lovelace'}
 ```
 
