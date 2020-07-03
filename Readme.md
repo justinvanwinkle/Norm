@@ -508,7 +508,7 @@ Lets say you use SQLAlchemy or even directly use one of the sql libraries.  Even
 
 In a datacenter environment, ping times to the db will be short, lets estimate the time to send a query to a database, plus the time to parse a short INSERT statement to be 1ms.  For 1000 rows, just the round trips to the database will add 1 second to the execution time.
 
-A run on my desktop produced, writing to a local postgresql database (latency is effectively 0), and the INSERT was still completed in 1/4th the time.  Adding network latency will make the improvement more dramatic.
+A run on my desktop, writing to a local postgresql database (latency is effectively 0), showed the INSERT was still completed in 1/4th the time.  Adding network latency will make the improvement more dramatic.
 ```
 *** Begin sqlalchemy_insert_bench
 Elapsed Time: 3.4474
