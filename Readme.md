@@ -205,7 +205,7 @@ This should not be used with a value like `5` or something, it is meant to be a 
 
 ### WITH (Commont Table Expressions)
 
-For WITH, a WITH object can be used to wrap other queries into a CTE tables.  The final query in the CTI is provided by calling the WITH instance.
+For WITH, a WITH object can be used to wrap other queries into CTE tables.  The final query in the CTE is provided by calling the WITH instance.
 
 ```python
 In [1]: from norm import WITH
