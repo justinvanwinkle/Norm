@@ -121,7 +121,9 @@ def get_users(cursor, user_ids, has_dog=False):
     return cursor.run_query(s)
 ```
 
-Calling methods on a query object does not change the object.  In other words, query objects are immutable.  This means it is always safe to create a base query and add clauses without modifying it.
+Calling methods on a query object does not change the object, it returns a new query object.
+
+In other words, query objects are immutable.  This means it is always safe to create a base query and add clauses without modifying it.
 
 ```python
 
@@ -481,4 +483,37 @@ print(rows)
 print(list(rows))
 # prints: [{'val': '0'}, {'val': '1'}, {'val': '2'}, {'val': '3'}, {'val': '4'}, {'val': '5'}, {'val': '6'}, {'val': '7'}, {'val': '8'}, {'val': '9'}]
 
+```
+
+
+#### Example: Efficiently move and join data between databases.
+see `benchmarks/shuttle_data_example.py`
+
+A run on my desktop produced:
+```
+Moved 1000000 rows in 20.09 seconds
+Streaming memory usage peak was 0.05MB
+Moved 1000000 rows in 16.58 seconds
+Fetchall memory usage peak was 212.13MB
+```
+
+#### Example: Faster INSERTs by reducing the number of queries executed
+see `benchmarks/benchmark.py`
+
+When you are inserting many rows, most Python DB-API libraries will produce 1 INSERT statement for each row.  There is a cursor.executemany method that many libraries provide, but this usually still produces a seperate INSERT statement per row inserted, and simply does these in a for loop.
+
+Lets say you are inserting 1000 rows into a table.  With Norm you can batch these into a single INSERT object and execute it, and a single large SQL statement is produced.  Back and forth trips to the database == 1.
+
+Lets say you use SQLAlchemy or even directly use one of the sql libraries.  Even if you use executemany, this will produce 1000 back and forth trips to the database.
+
+In a datacenter environment, ping times to the db will be short, lets estimate the time to send a query to a database, plus the time to parse a short INSERT statement to be 1ms.  For 1000 rows, just the round trips to the database will add 1 second to the execution time.
+
+A run on my desktop produced, writing to a local postgresql database (latency is effectively 0), and the INSERT was still completed in 1/4th the time.  Adding network latency will make the improvement more dramatic.
+```
+*** Begin sqlalchemy_insert_bench
+Elapsed Time: 3.4474
+Faster than SQLA factor: 1.0000
+*** Begin norm_insert_bench
+Elapsed Time: 0.7697
+Faster than SQLA factor: 4.4790
 ```
