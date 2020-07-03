@@ -482,7 +482,7 @@ print(rows)
 # prints: <norm.rows.RowsProxy object at 0x7f0ae07191d0>
 
 print(list(rows))
-# prints: [{'val': '0'}, {'val': '1'}, {'val': '2'}, {'val': '3'}, {'val': '4'}, {'val': '5'}, {'val': '6'}, {'val': '7'}, {'val': '8'}, {'val': '9'}]
+# prints: [{'val': '0'}, {'val': '1'}, {'val': '2'}, ...]
 
 ```
 
