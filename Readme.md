@@ -216,7 +216,8 @@ In [3]: all_active_players = (SELECT('player_id')
    ...:                       .FROM('players')
    ...:                       .WHERE(status='ACTIVE'))
 
-In [4]: career_runs_scored = (SELECT('player_id', 'SUM(runs_scored) AS total_runs')
+In [4]: career_runs_scored = (SELECT('player_id',
+   ...:                              'SUM(runs_scored) AS total_runs')
    ...:                       .FROM('games')
    ...:                       .GROUP_BY('player_id'))
 
