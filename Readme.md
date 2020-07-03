@@ -248,7 +248,7 @@ SELECT crs.player_id AS player_id,
 
 ```
 
-### LIMIT / GROUP_BY
+### LIMIT / OFFSET
 ```python
 In [1]: from norm import SELECT
 
