@@ -1,82 +1,5 @@
 # norm is like sql
 
-## setup
-
-### Connection Factory
-The norm connection factory is a helper to produce norm.connection.ConnectionProxy wrapped DB-API connection objects.
-
-#### Connection Factory Example:
-```python
-import sqlite3
-
-# notice that there is a specific class for each type of database
-from norm.norm_sqlite3 import SQLI_ConnectionFactory as ConnectionFactory
-
-def _make_connection():
-    conn = sqlite3.connect(':memory:')
-    return conn
-
-my_connection_factory = ConnectionFactory(_make_connection)
-
-
-# now we can get connections and use them
-conn = my_connection_factory()
-
-row = conn.run_queryone('SELECT 1 AS test_column')
-# row == {'test_column': 1}
-
-```
-
-#### Connection Proxy
-A norm connection factory will return connection objects that look a lot like whatever dbapi connection object you are used to from the library you use to create connections (psycopg2, pymssql, sqlite3, etc) but with some important exceptions.  While it passes on any method call to the actual connection object, it intercepts .cursor.  Additionally, it adds .run_query, .run_queryone  and .execute.
-
-
-##### .cursor
-the .cursor(...) method passes all arguments to the .cursor method of the actual connection object.  However, it wraps the cursor which is returned inside a CursorProxy object.
-
-##### .execute
-Calling .execute on a ConnectionProxy creates a cursor, executes the sql provided, and then closes the cursor.  It is meant as a convenience to avoid creating a cursor for queries where you do not care about any data returned.
-
-##### .run_query
-Calling this returns a generator which produces rows in the form of dictionaries.
-
-```python
-import sqlite3
-from norm.norm_sqlite3 import SQLI_ConnectionFactory as ConnectionFactory
-
-def conn_maker():
-    conn = sqlite3.connect(':memory:')
-    conn.execute(
-        '''CREATE TABLE users (
-               user_id INTEGER PRIMARY KEY AUTOINCREMENT,
-               first_name VARCHAR(64)
-        )''')
-    conn.commit()
-    return conn
-
-
-cf = ConnectionFactory(conn_maker)
-
-conn = cf()
-
-conn.execute(
-    '''CREATE TABLE foos (
-           val VARCHAR(64)
-    )''')
-
-for val in range(10):
-    conn.execute('INSERT INTO foos VALUES (:value)',
-                 dict(value=val))
-
-rows = conn.run_query('SELECT val FROM foos')
-print(rows)
-# prints: <norm.rows.RowsProxy object at 0x7f0ae07191d0>
-
-print(list(rows))
-# prints: [{'val': '0'}, {'val': '1'}, {'val': '2'}, {'val': '3'}, {'val': '4'}, {'val': '5'}, {'val': '6'}, {'val': '7'}, {'val': '8'}, {'val': '9'}]
-
-```
-
 
 ## Query Generation
 The primary purpose of Norm is to make it easier to generate SQL.
@@ -85,39 +8,39 @@ The primary purpose of Norm is to make it easier to generate SQL.
 #### Basic queries
 
 ```python
-from norm.norm_sqlite3 import SQLI_SELECT as SELECT
-
 # continuing from the example above
 
-s = (SELECT('val')
-     .FROM('foos'))
+In [1]: from norm.norm_sqlite3 import SQLI_SELECT as SELECT
 
-print(list(conn.run_query(s)))
-# prints: [{'val': '0'}, {'val': '1'}, {'val': '2'}, {'val': '3'}, {'val': '4'}, {'val': '5'}, {'val': '6'}, {'val': '7'}, {'val': '8'}, {'val': '9'}]
+In [2]: s = (SELECT('val')
+   ...:      .FROM('foos'))
 
+In [3]: print(s.query)
+SELECT val
+  FROM foos;
 
-s = (SELECT('val')
-     .FROM('foos')
-     .WHERE(val=5))
-print(list(conn.run_query(s)))
-# prints: [{'val': '5'}]
+In [4]: s2 = s.WHERE(val = 5)
 
-print(conn.run_queryone(s))
-# prints: {'val': '5'}
+In [5]: s2 = s2.SELECT('foos_id')
+
+In [6]: print(s2.query)
+SELECT val,
+       foos_id
+  FROM foos
+ WHERE val = :val_bind_0;
+
+In [7]: print(s.query)
+SELECT val
+  FROM foos;
 
 ```
 
-Bind parameters are automatically handled, for example in `.WHERE(val=5)`
+Bind parameters can be automatically handled, for example in `.WHERE(val=5)`
 
 ```python
-print(s.query)
-# prints:
-# SELECT val
-#   FROM foos
-#  WHERE val = :val_bind_0;
+In [8]: print(s2.binds)
+{'val_bind_0': 5}
 
-print(s.binds)
-# prints: {'val_bind_0': 5}
 ```
 
 Using .query and .binds seperately lets you use norm wherever you can execute SQL.  For example, with a SQLAlchemy Session object:
@@ -130,36 +53,42 @@ res = Session.execute(s.query, s.binds)
 In addition to the simple, static queries above, it is possible to add query clauses.
 
 ```python
-print(s.query)
-# SELECT val
-#   FROM foos
-#  WHERE val = :val_bind_0;
+In [9]: print(s.query)
+SELECT val
+  FROM foos;
 
-s = s.WHERE('val * 2 = 4')
-print(s.query)
-# SELECT val
-#   FROM foos
-#  WHERE val = :val_bind_0 AND
-#        val * 2 = 4;
+In [10]: s = s.WHERE('val * 2 = 4')
 
-s = s.JOIN('bars', ON='foos.val = bars.bar_id')
-print(s.query)
-#  SELECT val
-#    FROM foos
-#    JOIN bars
-#         ON foos.val = bars.bar_id
-#   WHERE val = :val_bind_0 AND
-#         val * 2 = 4;
+In [11]: print(s.query)
+SELECT val
+  FROM foos
+ WHERE val * 2 = 4;
 
+In [12]: s = s.JOIN('bars', ON='foos.val = bars.bar_id')
+
+In [13]: print(s.query)
+SELECT val
+  FROM foos
+  JOIN bars
+       ON foos.val = bars.bar_id
+ WHERE val * 2 = 4;
 ```
 
 Of course you can put it all together:
 ```python
-s = (SELECT('val')
-     .FROM('foos')
-     .JOIN('bars', ON='foos.val = bars.bar_id')
-     .WHERE(val=5)
-     .WHERE('val * 2 = 4'))
+In [14]: s = (SELECT('val')
+    ...:      .FROM('foos')
+    ...:      .JOIN('bars', ON='foos.val = bars.bar_id')
+    ...:      .WHERE(val=5)
+    ...:      .WHERE('val * 2 = 4'))
+
+In [15]: print(s.query)
+SELECT val
+  FROM foos
+  JOIN bars
+       ON foos.val = bars.bar_id
+ WHERE val = :val_bind_0 AND
+       val * 2 = 4;
 ```
 
 Or you can evolve queries dynamically:
@@ -251,39 +180,121 @@ The behavior for missing keys depends on the database/library norm backend you a
 i = INSERT('people', default=AsIs('DEFAULT'))
 ```
 
-This should not be used with a value like `5` or something, it is meant to be a way to specify the DEAULT keyword for the library/database you are using.  For psycopg2/postgresql, it will automatically fill in DEFAULT, using http://initd.org/psycopg/docs/extensions.html#psycopg2.extensions.AsIs  For inferior databases there may not be a defined way to do this safely.
-
-#### INSERT CURRENT DB DATETIME
-
-There is currently no way to signify that the datetime of the DB should be inserted for a field. Instead of using messy conversions, there is still a way to get there with norm! Query the DB date and/or time and save it as a variable. You can then use that variable when inserting into the DB.
-
-Below is an example of using pymssql's `GETDATE()`:
-
-```python
-db_date = conn.run_queryone('SELECT GETDATE() as curDate')['curDate']
-rows = [dict(first_name='Ada', last_name='Lovelace', current_date=db_date),
-        dict(first_name='Grace', last_name='Hopper', current_date=db_date),
-        dict(first_name='Anita', last_name='Borg', current_date=db_date),
-        dict(first_name='Janie', last_name='Tsao', current_date=db_date),
-        dict(first_name='Katherine', last_name='Johnson', current_date=db_date)]
-i = INSERT('people', rows)
-conn.execute(i)
-```
+This should not be used with a value like `5` or something, it is meant to be a way to specify the DEAULT keyword for the library/database you are using.  For psycopg2/postgresql, it will automatically fill in DEFAULT, using http://initd.org/psycopg/docs/extensions.html#psycopg2.extensions.AsIs  For inferior databases there may not be a defined way to do this safely.  To allow literal SQL to be included as part of an insert, there is norm.NormAsIs.
 
 
 ### WITH (Commont Table Expressions)
 
-Implemented, documentation TBD.
+For WITH, a WITH object can be used to wrap other queries into a CTE tables.  The final query in the CTI is provided by calling the WITH instance.
 
-### LIMIT
+```python
+In [1]: from norm import WITH
 
-Implemented, documentation TBD.
+In [2]: from norm import SELECT
+
+In [3]: all_active_players = (SELECT('player_id')
+   ...:                       .FROM('players')
+   ...:                       .WHERE(status='ACTIVE'))
+
+In [4]: career_runs_scored = (SELECT('player_id', 'SUM(runs_scored) AS total_runs')
+   ...:                       .FROM('games')
+   ...:                       .GROUP_BY('player_id'))
+
+In [5]: w = WITH(all_active_players=all_active_players,
+   ...:          career_runs_scored=career_runs_scored)
+
+In [6]: active_players_total_runs = (SELECT('crs.player_id AS player_id',
+   ...:                                     'crs.total_runs AS total_runs')
+   ...:                              .FROM('all_active_players aap')
+   ...:                              .JOIN('career_runs_scored crs',
+   ...:                                    ON='crs.player_id = aap.player_id'))
+
+In [7]: w = w(active_players_total_runs)
+
+In [8]: print(w.query)
+WITH all_active_players AS
+       (SELECT player_id
+          FROM players
+         WHERE status = %(status_bind_0)s),
+     career_runs_scored AS
+       (SELECT player_id,
+               SUM(runs_scored) AS total_runs
+          FROM games
+        GROUP BY player_id)
+
+SELECT crs.player_id AS player_id,
+       crs.total_runs AS total_runs
+  FROM all_active_players aap
+  JOIN career_runs_scored crs
+       ON crs.player_id = aap.player_id;
+
+```
+
+### LIMIT / GROUP_BY
+```python
+In [1]: from norm import SELECT
+
+In [2]: s = (SELECT('FirstName as first_name',
+   ...:             'LastName as last_name')
+   ...:      .FROM('people')
+   ...:      .LIMIT(1))
+
+In [3]: print(s.query)
+SELECT FirstName as first_name,
+       LastName as last_name
+  FROM people
+ LIMIT 1;
+
+In [5]: s = s.bind(my_limit=5)
+
+In [6]: print(s.query)
+SELECT FirstName as first_name,
+       LastName as last_name
+  FROM people
+ LIMIT %(my_limit)s;
+
+In [7]: print(s.binds)
+{'my_limit': 5}
+
+```
+LIMIT and OFFSET can only appear in a given SQL statement one time.  Rather than being built up like the SELECT columns, WHERE clauses, etc, the Norm query will take the final value or expression provided.
+
+```python
+In [2]: s = (SELECT('FirstName as first_name',
+   ...:             'LastName as last_name')
+   ...:      .FROM('people')
+   ...:      .LIMIT('%(my_limit)s'))
+
+In [3]: s = s.LIMIT(250)
+
+In [4]: print(s.query)
+SELECT FirstName as first_name,
+       LastName as last_name
+  FROM people
+ LIMIT 250;
+
+In [5]: s = s.OFFSET(10)
+
+In [6]: print(s.query)
+SELECT FirstName as first_name,
+       LastName as last_name
+  FROM people
+ LIMIT 250
+OFFSET 10;
+
+In [7]: s = s.OFFSET(99)
+
+In [8]: print(s.query)
+SELECT FirstName as first_name,
+       LastName as last_name
+  FROM people
+ LIMIT 250
+OFFSET 99;
+```
 
 #### LIMIT vs. TOP
 
 While many SQL flavors prefer `LIMIT`, MS SQL Server favors `TOP`.
-
-For instance, if you only want to return one result, you would write the following:
 
 ```python
 In [1]: from norm.norm_pymssql import PYMSSQL_SELECT as SELECT
@@ -300,15 +311,156 @@ SELECT TOP 1
   FROM people;
 ```
 
-
-If you only want to return five results, you would write the following:
+### GROUP BY, ORDER BY, HAVING, RETURNING
+These methods work much like WHERE in that they can be stacked.
 
 ```python
-query = (
-    SELECT('TOP 5 FirstName as first_name',
-           'LastName as last_name')
-    .FROM('people'))
-rows = conn.run_queryone(query)
+In [4]: s = SELECT('u.user_id', 'u.first_name').FROM('users u')
+
+In [5]: print(s.query)
+SELECT u.user_id,
+       u.first_name
+  FROM users u;
+
+In [6]: s = SELECT('u.first_name').FROM('users u')
+
+In [7]: print(s.query)
+SELECT u.first_name
+  FROM users u;
+
+In [8]: s = s.GROUP_BY('u.first_name')
+
+In [9]: s = s.SELECT('COUNT(*) AS cnt')
+
+In [10]: print(s.query)
+SELECT u.first_name,
+       COUNT(*) AS cnt
+  FROM users u
+GROUP BY u.first_name;
+
+In [11]: s = s.HAVING('COUNT(*) > 3')
+
+In [12]: print(s.query)
+SELECT u.first_name,
+       COUNT(*) AS cnt
+  FROM users u
+GROUP BY u.first_name
+HAVING COUNT(*) > 3;
+
+In [13]: s = s.ORDER_BY('COUNT(*)')
+
+In [14]: print(s.query)
+SELECT u.first_name,
+       COUNT(*) AS cnt
+  FROM users u
+GROUP BY u.first_name
+HAVING COUNT(*) > 3
+ORDER BY COUNT(*);
+
+In [15]: s = s.ORDER_BY('u.first_name')
+
+In [16]: print(s.query)
+SELECT u.first_name,
+       COUNT(*) AS cnt
+  FROM users u
+GROUP BY u.first_name
+HAVING COUNT(*) > 3
+ORDER BY COUNT(*),
+         u.first_name;
+
+
+In [17]: u = UPDATE('users').SET(first_name='Bob').WHERE(first_name='Robert')
+
+In [18]: print(u.query)
+UPDATE users
+   SET first_name = %(first_name_bind)s
+ WHERE first_name = %(first_name_bind_1)s;
+
+In [19]: print(u.binds)
+{'first_name_bind': 'Bob', 'first_name_bind_1': 'Robert'}
+
+In [20]: u = u.RETURNING('u.user_id')
+
+In [21]: print(u.query)
+UPDATE users
+   SET first_name = %(first_name_bind)s
+ WHERE first_name = %(first_name_bind_1)s
+RETURNING u.user_id;
+
+```
+
+
+### Connection Factory
+The norm connection factory is a helper to produce norm.connection.ConnectionProxy wrapped DB-API connection objects.
+
+#### Connection Factory Example:
+```python
+import sqlite3
+
+# notice that there is a specific class for each type of database
+from norm.norm_sqlite3 import SQLI_ConnectionFactory as ConnectionFactory
+
+def _make_connection():
+    conn = sqlite3.connect(':memory:')
+    return conn
+
+my_connection_factory = ConnectionFactory(_make_connection)
+
+
+# now we can get connections and use them
+conn = my_connection_factory()
+
+row = conn.run_queryone('SELECT 1 AS test_column')
+# row == {'test_column': 1}
+
+```
+
+#### Connection Proxy
+A norm connection factory will return connection objects that look a lot like whatever dbapi connection object you are used to from the library you use to create connections (psycopg2, pymssql, sqlite3, etc) but with some important exceptions.  While it passes on any method call to the actual connection object, it intercepts .cursor.  Additionally, it adds .run_query, .run_queryone  and .execute.
+
+
+##### .cursor
+the .cursor(...) method passes all arguments to the .cursor method of the actual connection object.  However, it wraps the cursor which is returned inside a CursorProxy object.
+
+##### .execute
+Calling .execute on a ConnectionProxy creates a cursor, executes the sql provided, and then closes the cursor.  It is meant as a convenience to avoid creating a cursor for queries where you do not care about any data returned.
+
+##### .run_query
+Calling this returns a generator which produces rows in the form of dictionaries.
+
+```python
+import sqlite3
+from norm.norm_sqlite3 import SQLI_ConnectionFactory as ConnectionFactory
+
+def conn_maker():
+    conn = sqlite3.connect(':memory:')
+    conn.execute(
+        '''CREATE TABLE users (
+               user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+               first_name VARCHAR(64)
+        )''')
+    conn.commit()
+    return conn
+
+
+cf = ConnectionFactory(conn_maker)
+
+conn = cf()
+
+conn.execute(
+    '''CREATE TABLE foos (
+           val VARCHAR(64)
+    )''')
+
+for val in range(10):
+    conn.execute('INSERT INTO foos VALUES (:value)',
+                 dict(value=val))
+
+rows = conn.run_query('SELECT val FROM foos')
+print(rows)
+# prints: <norm.rows.RowsProxy object at 0x7f0ae07191d0>
+
 print(list(rows))
-# prints : [{'first_name': 'Ada', 'last_name': 'Lovelace'}, {'first_name': 'Grace', 'last_name': 'Hopper'}, {'first_name': 'Anita', 'last_name': 'Borg'}, {'first_name': 'Janie', 'last_name': 'Tsao'}, {'first_name': 'Katherine', 'last_name': 'Johnson'}]
+# prints: [{'val': '0'}, {'val': '1'}, {'val': '2'}, {'val': '3'}, {'val': '4'}, {'val': '5'}, {'val': '6'}, {'val': '7'}, {'val': '8'}, {'val': '9'}]
+
 ```
