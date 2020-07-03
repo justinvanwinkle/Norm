@@ -249,6 +249,37 @@ SELECT crs.player_id AS player_id,
   JOIN career_runs_scored crs
        ON crs.player_id = aap.player_id;
 
+In [9]: outer_w = WITH(active_players_total_runs=w)
+
+In [10]: outer_w = outer_w(SELECT('aptr.player_id')
+   ...:                    .FROM('active_players_total_runs aptr')
+   ...:                    .WHERE('aptr.total_runs > 500'))
+
+In [11]: print(outer_w.query)
+WITH active_players_total_runs AS
+       (WITH all_active_players AS
+               (SELECT player_id
+                  FROM players
+                 WHERE status = %(status_bind_0)s),
+             career_runs_scored AS
+               (SELECT player_id,
+                       SUM(runs_scored) AS total_runs
+                  FROM games
+                GROUP BY player_id)
+
+        SELECT crs.player_id AS player_id,
+               crs.total_runs AS total_runs
+          FROM all_active_players aap
+          JOIN career_runs_scored crs
+               ON crs.player_id = aap.player_id)
+
+SELECT aptr.player_id
+  FROM active_players_total_runs aptr
+ WHERE aptr.total_runs > 500;
+
+# This example is a little contrived, there are obviously
+#   better ways to do this query
+
 ```
 
 ### LIMIT / OFFSET
