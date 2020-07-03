@@ -8,8 +8,6 @@ The primary purpose of Norm is to make it easier to generate SQL.
 #### Basic queries
 
 ```python
-# continuing from the example above
-
 In [1]: from norm.norm_sqlite3 import SQLI_SELECT as SELECT
 
 In [2]: s = (SELECT('val')
@@ -147,16 +145,36 @@ def get_karls(conn):
 UPDATE and DELETE work basically the same as SELECT
 
 ```python
-fix_karls = (UPDATE('people')
-             .SET(first_name='Karl')
-             .WHERE(first_name='karl'))
-conn.execute(fix_karls)
+In [1]: from norm import UPDATE
+
+In [2]: from norm import SELECT
+
+In [3]: fix_karls = (UPDATE('people')
+   ...:              .SET(first_name='Karl')
+   ...:              .WHERE(first_name='karl'))
+
+In [4]: print(fix_karls.query)
+UPDATE people
+   SET first_name = %(first_name_bind)s
+ WHERE first_name = %(first_name_bind_1)s;
+
+In [5]: print(fix_karls.binds)
+{'first_name_bind': 'Karl', 'first_name_bind_1': 'karl'}
+
 ```
 
 ```python
-remove_karls = (DELETE('people')
-                .WHERE(first_name='Karl'))
-conn.execute(remove_karls)
+In [8]: from norm import DELETE
+
+In [9]: remove_karls = (DELETE('people')
+   ...:                 .WHERE(first_name='Karl'))
+
+In [10]: print(remove_karls.query)
+DELETE FROM people
+ WHERE first_name = %(first_name_bind_0)s;
+
+In [11]: print(remove_karls.binds)
+{'first_name_bind_0': 'Karl'}
 ```
 
 ### INSERT
