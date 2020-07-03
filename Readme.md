@@ -286,13 +286,18 @@ While many SQL flavors prefer `LIMIT`, MS SQL Server favors `TOP`.
 For instance, if you only want to return one result, you would write the following:
 
 ```python
-s = (SELECT('FirstName as first_name',
-            'LastName as last_name')
-     .FROM('people')
-     .TOP(1))
-print(conn.run_queryone(s))
+In [1]: from norm.norm_pymssql import PYMSSQL_SELECT as SELECT
 
-# prints: {'first_name': 'Ada', 'last_name': 'Lovelace'}
+In [2]: s = (SELECT('FirstName as first_name',
+   ...:             'LastName as last_name')
+   ...:      .FROM('people')
+   ...:      .TOP(1))
+
+In [3]: print(s.query)
+SELECT TOP 1
+       FirstName as first_name,
+       LastName as last_name
+  FROM people;
 ```
 
 

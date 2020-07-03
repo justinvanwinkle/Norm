@@ -1,14 +1,13 @@
 from time import monotonic
-from tempfile import mktemp
-import sqlite3
+import psycopg2
 
 from sqlalchemy import Table, Column, Integer, String, MetaData, ForeignKey
 from sqlalchemy.sql import select
 from sqlalchemy import create_engine
 
-from norm.norm_sqlite3 import SQLI_ConnectionFactory
-from norm.norm_sqlite3 import SQLI_SELECT as SELECT
-from norm.norm_sqlite3 import SQLI_INSERT as INSERT
+from norm.norm_psycopg2 import PG_ConnectionFactory
+from norm.norm_psycopg2 import PG_SELECT as SELECT
+from norm.norm_psycopg2 import PG_INSERT as INSERT
 
 
 metadata = MetaData()
@@ -26,66 +25,67 @@ addresses = Table(
 
 
 fake_users = [{'user_id': id, 'name': 'Bob', 'fullname': 'Bob Loblaw'}
-              for id in range(10000)]
+              for id in range(5000)]
 
 fake_addresses = [{'user_id': user_id, 'email_address': 'bob@loblaw.com'}
-                  for user_id in range(10000)] * 8
+                  for user_id in range(5000)] * 8
 
-setup_users = '''\
+setup_ddl = '''\
+DROP TABLE IF EXISTS addresses;
+DROP TABLE IF EXISTS users;
+
 CREATE TABLE users (
   user_id INTEGER PRIMARY KEY,
   name VARCHAR(255),
-  fullname VARCHAR(255));'''
+  fullname VARCHAR(255));
 
-setup_addresses = '''\
 CREATE TABLE addresses (
-  address_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  address_id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users (user_id),
   email_address VARCHAR(255) NOT NULL);'''
 
 
-def setup_db():
-    fn = mktemp()
-    conn = sqlite3.connect(fn)
-    conn.execute(setup_users)
-    conn.execute(setup_addresses)
-    conn.commit()
-    return fn
-
-
 def make_db_conn():
-    fn = setup_db()
-    return sqlite3.connect(fn)
+    return psycopg2.connect(dbname='scratch')
+
+
+def setup_db():
+    conn = make_db_conn()
+    conn.cursor().execute(setup_ddl)
+    conn.commit()
 
 
 def make_sqla_conn():
-    fn = setup_db()
-    print(fn)
-    engine = create_engine('sqlite:///' + fn)
+    engine = create_engine('postgresql:///scratch')
     return engine.connect()
 
 
 def norm_conn():
-    return SQLI_ConnectionFactory(make_db_conn)()
+    return PG_ConnectionFactory(make_db_conn)()
 
 
 def sqlalchemy_bench():
     s = (select([users.c.name, users.c.fullname, addresses.c.email_address],
-                users.c.id == addresses.c.user_id)
-         .where(users.c.id > 1)
+                users.c.user_id == addresses.c.user_id)
+         .where(users.c.user_id > 1)
          .where(users.c.name.startswith('Justin')))
     return str(s)
 
 
 def sqlalchemy_insert_bench():
     conn = make_sqla_conn()
-    with conn.begin():
+    # conn.connection.connection.set_trace_callback(print)
+    with conn.begin() as trans:
         conn.execute(users.insert(), fake_users)
         conn.execute(addresses.insert(), fake_addresses)
+        trans.commit()
+    user_count = conn.execute('SELECT COUNT(*) from users').fetchone()
+    print('** user count', user_count, len(fake_users))
 
 
 def norm_insert_bench():
     conn = norm_conn()
+    # conn.set_trace_callback(print)
     conn.execute(INSERT('users', fake_users))
     conn.execute(INSERT('addresses', fake_addresses))
     conn.commit()
@@ -97,7 +97,7 @@ def norm_bench():
                 'addresses.email_address')
          .FROM('users')
          .JOIN('addresses', ON='users.id = addresses.user_id')
-         .WHERE('users.id > %(id)s').bind(id=1)
+         .WHERE('users.id > %(user_id)s').bind(user_id=1)
          .WHERE("users.name LIKE %(name)s")
          .bind(name='Justin%'))
 
@@ -110,8 +110,8 @@ def raw_bench():
        addresses.email_address
   FROM users
   JOIN addresses
-       ON users.id = addresses.user_id
- WHERE users.id > %(id)s AND
+       ON users.user_id = addresses.user_id
+ WHERE users.id > %(user_id)s AND
        users.name LIKE %(name)s;"""
     return s
 
@@ -146,14 +146,16 @@ def time_insert(f, last=None):
 
 
 def run_benchmark():
-    # print('*' * 70)
-    # print('*' * 70)
-    # sqla_time = time_it(sqlalchemy_bench)
-    # norm_time = time_it(norm_bench, sqla_time)
-    # time_it(raw_bench, norm_time)
     print('*' * 70)
     print('*' * 70)
+    sqla_time = time_it(sqlalchemy_bench)
+    norm_time = time_it(norm_bench, sqla_time)
+    time_it(raw_bench, norm_time)
+    print('*' * 70)
+    print('*' * 70)
+    setup_db()
     sqla_time = time_insert(sqlalchemy_insert_bench)
+    setup_db()
     time_insert(norm_insert_bench, sqla_time)
 
 
