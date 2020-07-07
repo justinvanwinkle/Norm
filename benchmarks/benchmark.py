@@ -65,7 +65,8 @@ def norm_conn():
 
 
 def sqlalchemy_bench():
-    s = (select([users.c.name, users.c.fullname, addresses.c.email_address],
+    s = (select([users.c.name, users.c.fullname,
+                 addresses.c.email_address],
                 users.c.user_id == addresses.c.user_id)
          .where(users.c.user_id > 1)
          .where(users.c.name.startswith('Justin')))

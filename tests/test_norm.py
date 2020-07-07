@@ -19,6 +19,28 @@ def test_simple_select():
     assert s.query == expected
 
 
+kw_alias_query = """\
+SELECT tbl1.column1 AS col1,
+       tbl2.column2 AS col2,
+       tbl2.column3 AS col3
+  FROM table1 AS tbl1
+  JOIN table2 AS tbl2
+       ON tbl1.tid = tbl2.tid
+ WHERE tbl1.col2 = %(tbl1___col2_bind_0)s;"""
+
+
+def test_kw_aliases():
+    s = (SELECT("tbl1.column1 AS col1")
+         .FROM("table1 AS tbl1")
+         .JOIN("table2 AS tbl2", ON='tbl1.tid = tbl2.tid')
+         .SELECT("tbl2.column2 AS col2",
+                 "tbl2.column3 AS col3")
+         .WHERE(**{"tbl1.col2": 'testval'}))
+
+    assert s.query == kw_alias_query
+    assert s.binds == {'tbl1___col2_bind_0': 'testval'}
+
+
 def test_simple_inner_join_select():
     s = (SELECT("tbl1.column1 AS col1")
          .FROM("table1 AS tbl1")
@@ -290,6 +312,20 @@ def test_simple_update():
         "       col2 = 'test2';"])
 
     assert u.query == expected
+
+
+def test_simple_update_star_kw():
+    u = (UPDATE("table1")
+         .SET(**{'col1': 'test',
+                 'col2': 'test2'}))
+    expected = '\n'.join([
+        "UPDATE table1",
+        "   SET col1 = %(col1_bind)s,",
+        "       col2 = %(col2_bind)s;"])
+
+    assert u.query == expected
+    assert u.binds == dict(col1_bind='test',
+                           col2_bind='test2')
 
 
 def test_update_one_row():

@@ -169,7 +169,13 @@ class Query:
         self._query = None
 
     @classmethod
+    def clean_bind_name(cls, s):
+        s = s.replace('.', '___')
+        return s
+
+    @classmethod
     def bnd(cls, s):
+        s = cls.clean_bind_name(s)
         return "%s%s%s" % (cls.bind_prefix, s, cls.bind_postfix)
 
     @property
@@ -193,7 +199,11 @@ class Query:
 
     def bind(self, **binds):
         s = self.child()
-        s._binds = list(binds.items())
+        final_binds = []
+        for name, value in binds.items():
+            name = self.clean_bind_name(name)
+            final_binds.append((name, value))
+        s._binds = final_binds
         return s
 
     def child(self):
@@ -222,7 +232,8 @@ class _SELECT_UPDATE(Query):
         for stmt in args:
             s.chain.append((WHERE, stmt))
         for column_name, value in kw.items():
-            bind_val_name = '%s_bind_%s' % (column_name, s.bind_len)
+            bind_val_name = '%s_bind_%s' % (
+                self.clean_bind_name(column_name), s.bind_len)
             s._binds.append((bind_val_name, value))
             expr = column_name + ' = ' + self.bnd(bind_val_name)
             s.chain.append((WHERE, expr))
@@ -334,7 +345,8 @@ class UPDATE(_SELECT_UPDATE):
             self.chain.append((SET, stmt))
 
         for column_name, value in kw.items():
-            bind_name = column_name + '_bind'
+            clean_column_name = self.clean_bind_name(column_name)
+            bind_name = clean_column_name + '_bind'
             s._binds.append((bind_name, value))
             expr = str(column_name) + ' = ' + self.bnd(bind_name)
             s.chain.append((SET, expr))
