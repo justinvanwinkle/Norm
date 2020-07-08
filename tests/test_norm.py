@@ -41,6 +41,16 @@ def test_kw_aliases():
     assert s.binds == {'tbl1___col2_bind_0': 'testval'}
 
 
+simple_inner_join_select_expected = """\
+SELECT tbl1.column1 AS col1,
+       tbl2.column2 AS col2,
+       tbl2.column3 AS col3
+  FROM table1 AS tbl1
+  JOIN table2 AS tbl2
+       ON tbl1.tid = tbl2.tid
+ WHERE tbl1.col2 = 'testval';"""
+
+
 def test_simple_inner_join_select():
     s = (SELECT("tbl1.column1 AS col1")
          .FROM("table1 AS tbl1")
@@ -48,15 +58,17 @@ def test_simple_inner_join_select():
          .SELECT("tbl2.column2 AS col2",
                  "tbl2.column3 AS col3")
          .WHERE("tbl1.col2 = 'testval'"))
-    expected = '\n'.join([
-        "SELECT tbl1.column1 AS col1,",
-        "       tbl2.column2 AS col2,",
-        "       tbl2.column3 AS col3",
-        "  FROM table1 AS tbl1",
-        "  JOIN table2 AS tbl2",
-        "       ON tbl1.tid = tbl2.tid",
-        " WHERE tbl1.col2 = 'testval';"])
-    assert s.query == expected
+    assert s.query == simple_inner_join_select_expected
+
+
+simple_outer_join_expected = """\
+SELECT tbl1.column1 AS col1,
+       tbl2.column2 AS col2,
+       tbl2.column3 AS col3
+  FROM table1 AS tbl1
+  LEFT JOIN table2 AS tbl2
+       ON tbl1.tid = tbl2.tid
+ WHERE tbl1.col2 = 'testval';"""
 
 
 def test_simple_outer_join_select():
@@ -66,15 +78,14 @@ def test_simple_outer_join_select():
          .SELECT("tbl2.column2 AS col2",
                  "tbl2.column3 AS col3")
          .WHERE("tbl1.col2 = 'testval'"))
-    expected = '\n'.join([
-        "SELECT tbl1.column1 AS col1,",
-        "       tbl2.column2 AS col2,",
-        "       tbl2.column3 AS col3",
-        "  FROM table1 AS tbl1",
-        "  LEFT JOIN table2 AS tbl2",
-        "       ON tbl1.tid = tbl2.tid",
-        " WHERE tbl1.col2 = 'testval';"])
-    assert s.query == expected
+    assert s.query == simple_outer_join_expected
+
+
+multiple_where_expected = """\
+SELECT tbl1.column1 AS col1
+  FROM table1 AS tbl1
+ WHERE tbl1.col2 = 'testval' AND
+       tbl1.col3 = 'otherval';"""
 
 
 def test_multiple_where():
@@ -82,13 +93,23 @@ def test_multiple_where():
          .FROM("table1 AS tbl1")
          .WHERE("tbl1.col2 = 'testval'")
          .WHERE("tbl1.col3 = 'otherval'"))
-    expected = '\n'.join([
-        "SELECT tbl1.column1 AS col1",
-        "  FROM table1 AS tbl1",
-        " WHERE tbl1.col2 = 'testval' AND",
-        "       tbl1.col3 = 'otherval';"])
+    assert s.query == multiple_where_expected
 
-    assert s.query == expected
+
+all_select_methods_expected = """\
+SELECT tbl1.column1 AS col1,
+       table2.blah
+  FROM table1 AS tbl1
+  JOIN table2
+       ON table2.blah = tbl1.col2
+ WHERE tbl1.col2 = 'testval'
+GROUP BY table2.blah,
+         col1
+HAVING count(*) > 5 AND
+       count(*) > 6
+ORDER BY count(*)
+ LIMIT 5
+OFFSET 3;"""
 
 
 def test_all_select_methods():
@@ -104,22 +125,22 @@ def test_all_select_methods():
          .LIMIT(5)
          .OFFSET(3))
 
-    expected = '\n'.join([
-        "SELECT tbl1.column1 AS col1,",
-        "       table2.blah",
-        "  FROM table1 AS tbl1",
-        "  JOIN table2",
-        "       ON table2.blah = tbl1.col2",
-        " WHERE tbl1.col2 = 'testval'",
-        "GROUP BY table2.blah,",
-        "         col1",
-        "HAVING count(*) > 5 AND",
-        "       count(*) > 6",
-        "ORDER BY count(*)",
-        " LIMIT 5",
-        "OFFSET 3;"])
+    assert s.query == all_select_methods_expected
 
-    assert s.query == expected
+
+top_select_expected = """\
+SELECT TOP 5
+       tbl1.column1 AS col1,
+       table2.blah
+  FROM table1 AS tbl1
+  JOIN table2
+       ON table2.blah = tbl1.col2
+ WHERE tbl1.col2 = 'testval'
+GROUP BY table2.blah,
+         col1
+HAVING count(*) > 5 AND
+       count(*) > 6
+ORDER BY count(*);"""
 
 
 def test_top_select():
@@ -134,24 +155,28 @@ def test_top_select():
          .ORDER_BY("count(*)")
          .TOP(5))
 
-    expected = '\n'.join([
-        "SELECT TOP 5",
-        "       tbl1.column1 AS col1,",
-        "       table2.blah",
-        "  FROM table1 AS tbl1",
-        "  JOIN table2",
-        "       ON table2.blah = tbl1.col2",
-        " WHERE tbl1.col2 = 'testval'",
-        "GROUP BY table2.blah,",
-        "         col1",
-        "HAVING count(*) > 5 AND",
-        "       count(*) > 6",
-        "ORDER BY count(*);"])
-
-    assert s.query == expected
+    assert s.query == top_select_expected
 
 
-def test_overwriting_select_methods_overwrite():
+overwriting_select_methods_expected = """\
+SELECT TOP 2
+       tbl1.column1 AS col1,
+       table2.blah
+  FROM table1 AS tbl1
+  JOIN table2
+       ON table2.blah = tbl1.col2
+ WHERE tbl1.col2 = 'testval'
+GROUP BY THIS IS BAD,
+         table2.blah
+HAVING count(*) > BAD AND
+       count(*) > 5
+ORDER BY STILL BAD,
+         count(*)
+ LIMIT 5
+OFFSET 3;"""
+
+
+def test_overwriting_select_methods():
     s = (SELECT("tbl1.column1 AS col1")
          .FROM("table1 AS tbl1")
          .WHERE("tbl1.col2 = 'testval'")
@@ -170,24 +195,14 @@ def test_overwriting_select_methods_overwrite():
          .OFFSET('should not see this')
          .OFFSET(3))
 
-    expected = '\n'.join([
-        "SELECT TOP 2",
-        "       tbl1.column1 AS col1,",
-        "       table2.blah",
-        "  FROM table1 AS tbl1",
-        "  JOIN table2",
-        "       ON table2.blah = tbl1.col2",
-        " WHERE tbl1.col2 = 'testval'",
-        "GROUP BY THIS IS BAD,",
-        "         table2.blah",
-        "HAVING count(*) > BAD AND",
-        "       count(*) > 5",
-        "ORDER BY STILL BAD,",
-        "         count(*)",
-        " LIMIT 5",
-        "OFFSET 3;"])
+    assert s.query == overwriting_select_methods_expected
 
-    assert s.query == expected
+
+binds_expected = """\
+SELECT tbl1.column1 AS col1
+  FROM table1 AS tbl1
+ WHERE tbl1.col2 = 'testval' AND
+       tbl1.col3 = %(bind1)s;"""
 
 
 def test_binds():
@@ -197,14 +212,18 @@ def test_binds():
           .WHERE("tbl1.col3 = %(bind1)s")
           .bind(bind1='bind1value'))
 
-    expected1 = '\n'.join([
-        "SELECT tbl1.column1 AS col1",
-        "  FROM table1 AS tbl1",
-        " WHERE tbl1.col2 = 'testval' AND",
-        "       tbl1.col3 = %(bind1)s;"])
-
-    assert s1.query == expected1
+    assert s1.query == binds_expected
     assert s1.binds == {'bind1': 'bind1value'}
+
+
+generate_binds_expected = """\
+SELECT tbl1.column1 AS col1
+  FROM table1 AS tbl1
+ WHERE id = %(id_bind_0)s AND
+       name = %(name_bind_1)s AND
+       occupation = %(occupation_bind_2)s AND
+       salary = %(salary_bind_3)s AND
+       tbl1.col3 = %(bind1)s;"""
 
 
 def test_generate_binds():
@@ -216,16 +235,7 @@ def test_generate_binds():
           .WHERE("tbl1.col3 = %(bind1)s")
           .bind(bind1='bind1value'))
 
-    expected1_v1 = '\n'.join([
-        "SELECT tbl1.column1 AS col1",
-        "  FROM table1 AS tbl1",
-        " WHERE id = %(id_bind_0)s AND",
-        "       name = %(name_bind_1)s AND",
-        "       occupation = %(occupation_bind_2)s AND",
-        "       salary = %(salary_bind_3)s AND",
-        "       tbl1.col3 = %(bind1)s;"])
-
-    assert s1.query == expected1_v1
+    assert s1.query == generate_binds_expected
     assert s1.binds == {'bind1': 'bind1value',
                         'id_bind_0': 1,
                         'name_bind_1': 'bossanova',
@@ -302,16 +312,18 @@ def test_generative_query():
     assert s1.binds == {}
 
 
+simple_update_expected = """\
+UPDATE table1
+   SET col1 = 'test',
+       col2 = 'test2';"""
+
+
 def test_simple_update():
     u = (UPDATE("table1")
          .SET("col1 = 'test'")
          .SET("col2 = 'test2'"))
-    expected = '\n'.join([
-        "UPDATE table1",
-        "   SET col1 = 'test',",
-        "       col2 = 'test2';"])
 
-    assert u.query == expected
+    assert u.query == simple_update_expected
 
 
 def test_simple_update_star_kw():
