@@ -13,6 +13,7 @@ pytest-flake8 = "*"
 psycopg2-binary = "^2.8.4"
 ipython = "*"
 pytest = "*"
+sqlalchemy = "*"
 
 [build-system]
 requires = ["poetry>=0.12"]
