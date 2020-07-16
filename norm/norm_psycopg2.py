@@ -32,7 +32,7 @@ class PG_DELETE(DELETE):
 
 class PG_CursorProxy(CursorProxy):
     def _query_to_log(self, query, sql_query, params):
-        return self.mogrify(sql_query, params)
+        return self.mogrify(sql_query, params).decode(self.connection.encoding)
 
 
 class PG_ConnectionProxy(ConnectionProxy):

@@ -40,6 +40,7 @@ class CursorProxy(object):
             try:
                 loggable_query = self._query_to_log(
                     query, sql_query, sql_binds)
+                loggable_query = loggable_query[:norm.max_query_log_length]
                 print(
                     f'\nQuery took {end-start:.2f} seconds:\n'
                     f'{loggable_query}\n\n',
