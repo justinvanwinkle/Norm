@@ -11,12 +11,28 @@ from norm.connection import CursorProxy
 
 
 PYMSSQL_AsIs = NormAsIs
+PYMSSQL_DEFAULT = NormAsIs('DEFAULT')
 
 _encrypt_statement = (
     "EncryptByKey(Key_GUID('{key_name}'), CAST({bind} AS VARCHAR(4000)))")
 
 
+class PymssqlLoggingMixin:
+    @property
+    def _loggable_query(self):
+        from _mssql import quote_data
+        query = self.query
+        for key, value in self.binds.items():
+            quoted_data = quote_data(value)
+            if isinstance(quoted_data, bytes):
+                quoted_data = quoted_data.decode('utf-8')
+            query = query.replace(self.bnd(key), quoted_data)
+        return query
+
+
 class PYMSSQL_INSERT(INSERT):
+    defaultdefault = PYMSSQL_DEFAULT
+
     def __init__(self,
                  table,
                  data=None,
@@ -53,15 +69,15 @@ class PYMSSQL_INSERT(INSERT):
         return bind
 
 
-class PYMSSQL_SELECT(SELECT):
+class PYMSSQL_SELECT(PymssqlLoggingMixin, SELECT):
     pass
 
 
-class PYMSSQL_UPDATE(UPDATE):
+class PYMSSQL_UPDATE(PymssqlLoggingMixin, UPDATE):
     pass
 
 
-class PYMSSQL_DELETE(DELETE):
+class PYMSSQL_DELETE(PymssqlLoggingMixin, DELETE):
     pass
 
 

@@ -45,6 +45,10 @@ class NormAsIs:
         except AttributeError:
             return False
 
+    @classmethod
+    def isasis(cls, o):
+        return isinstance(o, cls)
+
 
 class BogusQuery(Exception):
     pass
@@ -195,7 +199,13 @@ class Query:
 
     @property
     def binds(self):
-        return dict(self.bind_items)
+        operative_binds = {}
+        for key, value in self.bind_items:
+            if NormAsIs.isasis(value):
+                operative_binds.pop(key, None)
+                continue
+            operative_binds[key] = value
+        return operative_binds
 
     def bind(self, **binds):
         s = self.child()
@@ -222,7 +232,23 @@ class Query:
     def query(self):
         if self._query is None:
             self._query = compile(self.build_chain(), self.query_type)
-        return self._query
+        query = self._query
+
+        final_binds = {}
+        for key, value in self.bind_items:
+            final_binds[key] = value
+        for key in sorted(final_binds.keys(), key=len, reverse=True):
+            value = final_binds[key]
+            if NormAsIs.isasis(value):
+                query = query.replace(self.bnd(key), value.value)
+        return query
+
+    @property
+    def _loggable_query(self):
+        query = self.query
+        for key, value in self.binds.items():
+            query = query.replace(self.bnd(key), repr(value))
+        return query
 
 
 class _SELECT_UPDATE(Query):
@@ -416,10 +442,11 @@ class INSERT:
                 key = f'{col_name}_{index}'
 
                 if col_name in d:
-                    if not self._is_asis(d[col_name]):
+                    if not NormAsIs.isasis(d[col_name]):
                         binds[key] = d[col_name]
                 else:
-                    binds[key] = self.default
+                    if not NormAsIs.isasis(self.default):
+                        binds[key] = self.default
 
         return binds
 
@@ -453,11 +480,6 @@ class INSERT:
     def _bind_param_name(self, col_name, index):
         return f'{self.bind_prefix}{col_name}_{index}{self.bind_postfix}'
 
-    def _is_asis(self, val):
-        if isinstance(val, NormAsIs):
-            return True
-        return False
-
     def _query(self, data):
         q = 'INSERT INTO %s ' % self.table
 
@@ -479,8 +501,9 @@ class INSERT:
                 q += '('
                 last_col_ix = len(self.columns) - 1
                 for ix, col_name in enumerate(self.columns):
-                    if self._is_asis(d.get(col_name)):
-                        q += d.get(col_name).value
+                    col_val = d.get(col_name, self.default)
+                    if NormAsIs.isasis(col_val):
+                        q += col_val.value
                     else:
                         q += self._bind_param_name(col_name, index)
                     if last_col_ix != ix:

@@ -1,3 +1,7 @@
+from time import monotonic
+import sys
+
+import norm
 from norm.rows import RowsProxy
 
 
@@ -25,11 +29,31 @@ class CursorProxy(object):
 
     def execute(self, query, params=None):
         sql_query, sql_binds = _to_query_binds(query, params)
+        start = monotonic()
         if sql_binds:
             res = self.cursor.execute(sql_query, sql_binds)
         else:
             res = self.cursor.execute(sql_query)
+        end = monotonic()
+
+        if norm.enable_logging:
+            try:
+                loggable_query = self._query_to_log(
+                    query, sql_query, sql_binds)
+                print(
+                    f'\nQuery took {end-start:.2f} seconds:\n'
+                    f'{loggable_query}\n\n',
+                    file=sys.stderr)
+            except Exception:
+                pass
         return res
+
+    def _query_to_log(self, query, sql_query, params):
+        if hasattr(query, '_loggable_query'):
+            loggable_query = query._loggable_query
+        else:
+            loggable_query = sql_query
+        return loggable_query
 
     def run_query(self, query, params=None):
         self.execute(query, params)
@@ -98,7 +122,19 @@ class ConnectionFactory(object):
         self.connection_maker = connection_maker
 
     def __call__(self):
-        return self.connection_proxy(self.connection_maker())
+        start = monotonic()
+        conn = self.connection_proxy(self.connection_maker())
+        end = monotonic()
+
+        try:
+            if norm.enable_logging:
+                print(f'\nConnecting to db with {self.connection_maker}'
+                      f' took {end-start:.2f} seconds',
+                      file=sys.stderr)
+        except Exception:
+            pass
+
+        return conn
 
 
 __all__ = [CursorProxy,

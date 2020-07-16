@@ -26,6 +26,4 @@ def test_encrypted_insert():
 
 def test_error_on_no_key():
     with raises(RuntimeError):
-        INSERT('my_table',
-               rows,
-               encrypted_columns=['bub'])
+        INSERT('my_table', rows, encrypted_columns=['bub'])

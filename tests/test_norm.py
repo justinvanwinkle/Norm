@@ -1,4 +1,4 @@
-from __future__ import unicode_literals
+from datetime import datetime
 
 from norm import SELECT
 from norm import UPDATE
@@ -8,15 +8,38 @@ from norm import WITH
 from norm.norm import NormAsIs
 
 
+simple_select_query = """\
+SELECT tbl1.column1 AS col1
+  FROM table1 AS tbl1
+ WHERE tbl1.col2 = 'testval';"""
+
+
 def test_simple_select():
     s = (SELECT("tbl1.column1 AS col1")
          .FROM("table1 AS tbl1")
          .WHERE("tbl1.col2 = 'testval'"))
-    expected = '\n'.join([
-        "SELECT tbl1.column1 AS col1",
-        "  FROM table1 AS tbl1",
-        " WHERE tbl1.col2 = 'testval';"])
-    assert s.query == expected
+
+    assert s.query == simple_select_query
+    assert s.binds == {}
+
+
+simple_asis_query = """\
+SELECT tbl1.column1 AS col1
+  FROM table1 AS tbl1
+ WHERE tbl1.col2 = FOO AND
+       x = CURRENT_TIMESTAMP;"""
+
+
+def test_simple_asis():
+    literal2 = NormAsIs('CURRENT_TIMESTAMP')
+    s = (SELECT("tbl1.column1 AS col1")
+         .FROM("table1 AS tbl1")
+         .WHERE("tbl1.col2 = %(literal1)s",
+                x=literal2)
+         .bind(literal1=NormAsIs('FOO')))
+
+    assert s.query == simple_asis_query
+    assert s.binds == {}
 
 
 kw_alias_query = """\
@@ -58,7 +81,9 @@ def test_simple_inner_join_select():
          .SELECT("tbl2.column2 AS col2",
                  "tbl2.column3 AS col3")
          .WHERE("tbl1.col2 = 'testval'"))
+
     assert s.query == simple_inner_join_select_expected
+    assert s.binds == {}
 
 
 simple_outer_join_expected = """\
@@ -78,7 +103,9 @@ def test_simple_outer_join_select():
          .SELECT("tbl2.column2 AS col2",
                  "tbl2.column3 AS col3")
          .WHERE("tbl1.col2 = 'testval'"))
+
     assert s.query == simple_outer_join_expected
+    assert s.binds == {}
 
 
 multiple_where_expected = """\
@@ -93,7 +120,9 @@ def test_multiple_where():
          .FROM("table1 AS tbl1")
          .WHERE("tbl1.col2 = 'testval'")
          .WHERE("tbl1.col3 = 'otherval'"))
+
     assert s.query == multiple_where_expected
+    assert s.binds == {}
 
 
 all_select_methods_expected = """\
@@ -126,6 +155,7 @@ def test_all_select_methods():
          .OFFSET(3))
 
     assert s.query == all_select_methods_expected
+    assert s.binds == {}
 
 
 top_select_expected = """\
@@ -156,6 +186,7 @@ def test_top_select():
          .TOP(5))
 
     assert s.query == top_select_expected
+    assert s.binds == {}
 
 
 overwriting_select_methods_expected = """\
@@ -196,6 +227,7 @@ def test_overwriting_select_methods():
          .OFFSET(3))
 
     assert s.query == overwriting_select_methods_expected
+    assert s.binds == {}
 
 
 binds_expected = """\
@@ -324,20 +356,30 @@ def test_simple_update():
          .SET("col2 = 'test2'"))
 
     assert u.query == simple_update_expected
+    assert u.binds == {}
+
+
+simple_update_star_kw_query = """\
+UPDATE table1
+   SET col1 = %(col1_bind)s,
+       col2 = %(col2_bind)s;"""
 
 
 def test_simple_update_star_kw():
     u = (UPDATE("table1")
          .SET(**{'col1': 'test',
                  'col2': 'test2'}))
-    expected = '\n'.join([
-        "UPDATE table1",
-        "   SET col1 = %(col1_bind)s,",
-        "       col2 = %(col2_bind)s;"])
 
-    assert u.query == expected
+    assert u.query == simple_update_star_kw_query
     assert u.binds == dict(col1_bind='test',
                            col2_bind='test2')
+
+
+update_one_row_query = """\
+UPDATE table1
+   SET col1 = 'test',
+       col2 = 'test2'
+ WHERE id = %(id_bind_0)s;"""
 
 
 def test_update_one_row():
@@ -345,14 +387,16 @@ def test_update_one_row():
          .SET("col1 = 'test'")
          .SET("col2 = 'test2'")
          .WHERE(id=5))
-    expected = '\n'.join([
-        "UPDATE table1",
-        "   SET col1 = 'test',",
-        "       col2 = 'test2'",
-        " WHERE id = %(id_bind_0)s;"])
 
-    assert u.query == expected
+    assert u.query == update_one_row_query
     assert u.binds == {'id_bind_0': 5}
+
+
+named_arg_update_query = """\
+UPDATE table1
+   SET col1 = %(col1_bind)s,
+       col2 = 'test2'
+ WHERE id = %(id_bind_1)s;"""
 
 
 def test_named_arg_update():
@@ -360,15 +404,16 @@ def test_named_arg_update():
          .SET(col1='test')
          .SET("col2 = 'test2'")
          .WHERE(id=5))
-    expected = '\n'.join([
-        "UPDATE table1",
-        "   SET col1 = %(col1_bind)s,",
-        "       col2 = 'test2'",
-        " WHERE id = %(id_bind_1)s;"])
 
-    assert u.query == expected
+    assert u.query == named_arg_update_query
     assert u.binds == {'col1_bind': 'test',
                        'id_bind_1': 5}
+
+
+update_returning_query = """\
+UPDATE table1
+   SET col1 = %(col1_bind)s
+RETURNING test, test1;"""
 
 
 def test_update_returning():
@@ -376,10 +421,8 @@ def test_update_returning():
          .SET(col1='test')
          .RETURNING('test', 'test1'))
 
-    assert u.query == '\n'.join([
-        "UPDATE table1",
-        "   SET col1 = %(col1_bind)s",
-        "RETURNING test, test1;"])
+    assert u.query == update_returning_query
+    assert u.binds == {'col1_bind': 'test'}
 
 
 def test_simple_delete():
@@ -389,13 +432,16 @@ def test_simple_delete():
     assert d.binds == {}
 
 
+delete_where_query = """\
+DELETE FROM table2
+ WHERE x > 5;"""
+
+
 def test_delete_where():
     d = (DELETE('table2')
          .WHERE('x > 5'))
 
-    assert d.query == '\n'.join([
-        "DELETE FROM table2",
-        " WHERE x > 5;"])
+    assert d.query == delete_where_query
     assert d.binds == {}
 
 
@@ -538,10 +584,11 @@ def test_with():
     w = WITH(my_fake_table=u)
     w = w(INSERT('my_table',
                  columns=('foo', 'bar', 'whatever'),
-                 statement=SELECT('foo', 'bub', 'derp')
-                 .FROM('my_fake_table')))
+                 statement=(SELECT('foo', 'bub', 'derp')
+                            .FROM('my_fake_table'))))
 
     assert w.query == test_with_query
+    assert w.binds == {'foo_bind': '123'}
 
 
 with_multiple_query = """\
@@ -574,3 +621,20 @@ def test_with_multiple():
     w = w(SELECT('ct1.row1').FROM('cte_table_1 ct1'))
 
     assert w.query == with_multiple_query
+    assert w.binds == {}
+
+
+loggable_query_test = """\
+UPDATE table1
+   SET col1 = 'test',
+       col2 = datetime.datetime(1997, 11, 15, 1, 1)
+RETURNING test, test1;"""
+
+
+def test_loggable_query():
+    u = (UPDATE("table1")
+         .SET(col1='test',
+              col2=datetime(1997, 11, 15, 1, 1))
+         .RETURNING('test', 'test1'))
+
+    assert u._loggable_query == loggable_query_test

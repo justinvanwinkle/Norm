@@ -17,9 +17,6 @@ PG_NormAsIs = AsIs
 class PG_INSERT(INSERT):
     defaultdefault = DEFAULT
 
-    def _is_asis(self, val):
-        return False
-
 
 class PG_SELECT(SELECT):
     pass
@@ -34,7 +31,8 @@ class PG_DELETE(DELETE):
 
 
 class PG_CursorProxy(CursorProxy):
-    pass
+    def _query_to_log(self, query, sql_query, params):
+        return self.mogrify(sql_query, params)
 
 
 class PG_ConnectionProxy(ConnectionProxy):
