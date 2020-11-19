@@ -291,11 +291,11 @@ SELECT TOP 2
   JOIN table2
        ON table2.blah = tbl1.col2
  WHERE tbl1.col2 = 'testval'
-GROUP BY THIS IS BAD,
+GROUP BY table1.column1,
          table2.blah
-HAVING count(*) > BAD AND
+HAVING count(*) < 10 AND
        count(*) > 5
-ORDER BY STILL BAD,
+ORDER BY table1.column1,
          count(*)
  LIMIT 5
 OFFSET 3;"""
@@ -307,11 +307,11 @@ def test_overwriting_select_methods():
          .WHERE("tbl1.col2 = 'testval'")
          .JOIN("table2", ON="table2.blah = tbl1.col2")
          .SELECT("table2.blah")
-         .HAVING("count(*) > BAD")
+         .HAVING("count(*) < 10")
          .HAVING("count(*) > 5")
-         .GROUP_BY("THIS IS BAD")
+         .GROUP_BY("table1.column1")
          .GROUP_BY("table2.blah")
-         .ORDER_BY("STILL BAD")
+         .ORDER_BY("table1.column1")
          .ORDER_BY("count(*)")
          .TOP('no way')
          .TOP(2)
