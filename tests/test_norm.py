@@ -145,13 +145,16 @@ SELECT tbl1.column1 AS col1,
        EXISTS (
          SELECT 1
            FROM foo
-          WHERE foobar = tbl1.column1);"""
+          WHERE foobar = tbl1.column1 AND
+                bugs = %(bugs)s);"""
 
 
 def test_exists_subquery():
     sub = (EXISTS(1)
            .FROM('foo')
-           .WHERE('foobar = tbl1.column1'))
+           .WHERE('foobar = tbl1.column1',
+                  'bugs = %(bugs)s')
+           .bind(bugs='spiders'))
 
     s = (SELECT("tbl1.column1 AS col1")
          .FROM("table1 AS tbl1")
@@ -162,7 +165,7 @@ def test_exists_subquery():
                 sub))
 
     assert s.query == exists_subquery_expected
-    assert s.binds == {}
+    assert s.binds == {'bugs': 'spiders'}
 
 
 not_exists_subquery_expected = """\
@@ -176,13 +179,15 @@ SELECT tbl1.column1 AS col1,
        NOT EXISTS (
          SELECT 1
            FROM foo
-          WHERE foobar = tbl1.column1);"""
+          WHERE foobar = tbl1.column1 AND
+                bugs = %(bugs)s);"""
 
 
 def test_not_exists_subquery():
     sub = (NOT_EXISTS(1)
            .FROM('foo')
-           .WHERE('foobar = tbl1.column1'))
+           .WHERE('foobar = tbl1.column1',
+                  'bugs = %(bugs)s'))
 
     s = (SELECT("tbl1.column1 AS col1")
          .FROM("table1 AS tbl1")
@@ -190,10 +195,11 @@ def test_not_exists_subquery():
          .SELECT("tbl2.column2 AS col2",
                  "tbl2.column3 AS col3")
          .WHERE("tbl1.col2 = 'testval'",
-                sub))
+                sub)
+         .bind(bugs='spiders'))
 
     assert s.query == not_exists_subquery_expected
-    assert s.binds == {}
+    assert s.binds == {'bugs': 'spiders'}
 
 
 multiple_where_expected = """\
