@@ -5,6 +5,8 @@ from norm import UPDATE
 from norm import DELETE
 from norm import INSERT
 from norm import WITH
+from norm import EXISTS
+from norm import NOT_EXISTS
 from norm.norm import NormAsIs
 
 
@@ -105,6 +107,92 @@ def test_simple_outer_join_select():
          .WHERE("tbl1.col2 = 'testval'"))
 
     assert s.query == simple_outer_join_expected
+    assert s.binds == {}
+
+
+distinct_on_expected = """\
+SELECT DISTINCT ON (tbl1.column1)
+       tbl1.column1 AS col1,
+       tbl2.column2 AS col2,
+       tbl2.column3 AS col3
+  FROM table1 AS tbl1
+  LEFT JOIN table2 AS tbl2
+       ON tbl1.tid = tbl2.tid
+ WHERE tbl1.col2 = 'testval';"""
+
+
+def test_distinct_on():
+    s = (SELECT("tbl1.column1 AS col1")
+         .FROM("table1 AS tbl1")
+         .LEFTJOIN("table2 AS tbl2", ON='tbl1.tid = tbl2.tid')
+         .SELECT("tbl2.column2 AS col2",
+                 "tbl2.column3 AS col3")
+         .WHERE("tbl1.col2 = 'testval'")
+         .DISTINCT_ON('tbl1.column1'))
+
+    assert s.query == distinct_on_expected
+    assert s.binds == {}
+
+
+exists_subquery_expected = """\
+SELECT tbl1.column1 AS col1,
+       tbl2.column2 AS col2,
+       tbl2.column3 AS col3
+  FROM table1 AS tbl1
+  LEFT JOIN table2 AS tbl2
+       ON tbl1.tid = tbl2.tid
+ WHERE tbl1.col2 = 'testval' AND
+       EXISTS (
+         SELECT 1
+           FROM foo
+          WHERE foobar = tbl1.column1);"""
+
+
+def test_exists_subquery():
+    sub = (EXISTS(1)
+           .FROM('foo')
+           .WHERE('foobar = tbl1.column1'))
+
+    s = (SELECT("tbl1.column1 AS col1")
+         .FROM("table1 AS tbl1")
+         .LEFTJOIN("table2 AS tbl2", ON='tbl1.tid = tbl2.tid')
+         .SELECT("tbl2.column2 AS col2",
+                 "tbl2.column3 AS col3")
+         .WHERE("tbl1.col2 = 'testval'",
+                sub))
+
+    assert s.query == exists_subquery_expected
+    assert s.binds == {}
+
+
+not_exists_subquery_expected = """\
+SELECT tbl1.column1 AS col1,
+       tbl2.column2 AS col2,
+       tbl2.column3 AS col3
+  FROM table1 AS tbl1
+  LEFT JOIN table2 AS tbl2
+       ON tbl1.tid = tbl2.tid
+ WHERE tbl1.col2 = 'testval' AND
+       NOT EXISTS (
+         SELECT 1
+           FROM foo
+          WHERE foobar = tbl1.column1);"""
+
+
+def test_not_exists_subquery():
+    sub = (NOT_EXISTS(1)
+           .FROM('foo')
+           .WHERE('foobar = tbl1.column1'))
+
+    s = (SELECT("tbl1.column1 AS col1")
+         .FROM("table1 AS tbl1")
+         .LEFTJOIN("table2 AS tbl2", ON='tbl1.tid = tbl2.tid')
+         .SELECT("tbl2.column2 AS col2",
+                 "tbl2.column3 AS col3")
+         .WHERE("tbl1.col2 = 'testval'",
+                sub))
+
+    assert s.query == not_exists_subquery_expected
     assert s.binds == {}
 
 

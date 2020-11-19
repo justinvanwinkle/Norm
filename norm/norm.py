@@ -14,6 +14,8 @@ EXTRA = b'ex'
 TABLE = b't'
 SET = b's'
 RETURNING = b'r'
+DISTINCT_ON = b'do'
+JOIN_LATERAL = b'jl'
 
 SELECT_QT = b's'
 UPDATE_QT = b'u'
@@ -54,13 +56,23 @@ class BogusQuery(Exception):
     pass
 
 
-def indent_string(s, indent):
+def indent_string(s, indent=0, skip_first=False):
+    if not indent:
+        return s
     lines = s.splitlines()
+    if skip_first:
+        rest = lines[1:]
+        indented = lines[0]
+        if rest:
+            indented += '\n' + '\n'.join(' ' * indent + line
+                                         for line in lines[1:])
+        return indented
     return '\n'.join(' ' * indent + line for line in lines)
 
 
 def compile(chain, query_type):
     table = None
+    distinct_on = []
     columns = []
     from_ = []
     where = []
@@ -75,7 +87,9 @@ def compile(chain, query_type):
     returning = []
 
     for op, option in chain:
-        if op == COLUMN:
+        if op == DISTINCT_ON:
+            distinct_on.append(option)
+        elif op == COLUMN:
             columns.append(option)
         elif op == WHERE:
             where.append(option)
@@ -117,13 +131,16 @@ def compile(chain, query_type):
         query += 'SELECT '
         if top is not None:
             query += 'TOP ' + top + SEP
+        if distinct_on:
+            query += 'DISTINCT ON (' + ', '.join(distinct_on) + ')'
+            query += SEP
 
         query += COLUMN_SEP.join(columns)
 
         if from_:
             query += '\n  FROM ' + SEP.join(from_)
         if where:
-            query += '\n WHERE ' + WHERE_SEP.join(where)
+            query += '\n WHERE ' + indent_string(' AND\n'.join(where), 7, True)
         if group_by:
             query += '\nGROUP BY ' + GROUP_BY_SEP.join(group_by)
         if having:
@@ -250,13 +267,27 @@ class Query:
             query = query.replace(self.bnd(key), repr(value))
         return query
 
+    def _merge_subquery(self, subquery, indent=0):
+        if isinstance(subquery, str):
+            return subquery
+
+        try:
+            query = subquery.query.rstrip(';')
+            for pair in subquery.bind_items:
+                self._binds.append(pair)
+            return indent_string(query, indent)
+
+        except AttributeError:
+            raise BogusQuery("don't know how to handle this")
+
 
 class _SELECT_UPDATE(Query):
     def WHERE(self, *args, **kw):
         # TODO: handle OR
         s = self.child()
         for stmt in args:
-            s.chain.append((WHERE, stmt))
+            clause = s._merge_subquery(stmt)
+            s.chain.append((WHERE, clause))
         for column_name, value in kw.items():
             bind_val_name = '%s_bind_%s' % (
                 self.clean_bind_name(column_name), s.bind_len)
@@ -308,6 +339,11 @@ class SELECT(_SELECT_UPDATE):
         _SELECT_UPDATE.__init__(self)
 
         for stmt in args:
+            try:
+                stmt = str(int(stmt))
+            except ValueError:
+                pass
+
             self.chain.append((COLUMN, stmt))
 
     def SELECT(self, *args):
@@ -334,6 +370,12 @@ class SELECT(_SELECT_UPDATE):
             s.chain.append((GROUP_BY, arg))
         return s
 
+    def DISTINCT_ON(self, *args):
+        s = self.child()
+        for arg in args:
+            s.chain.append((DISTINCT_ON, arg))
+        return s
+
     def TOP(self, stmt):
         if isinstance(stmt, int):
             stmt = str(stmt)
@@ -354,6 +396,20 @@ class SELECT(_SELECT_UPDATE):
         s = self.child()
         s.chain.append((OFFSET, stmt))
         return s
+
+
+class EXISTS(SELECT):
+    @property
+    def query(self):
+        query = 'EXISTS (\n'
+        query += indent_string(super().query.rstrip(';'), 2) + ')'
+        return query
+
+
+class NOT_EXISTS(EXISTS):
+    @property
+    def query(self):
+        return 'NOT ' + super().query
 
 
 class UPDATE(_SELECT_UPDATE):

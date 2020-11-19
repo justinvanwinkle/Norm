@@ -5,6 +5,8 @@ from .norm import UPDATE
 from .norm import INSERT
 from .norm import DELETE
 from .norm import WITH
+from .norm import EXISTS
+from .norm import NOT_EXISTS
 from norm.rows import RowsProxy
 from norm.connection import ConnectionProxy
 from norm.connection import ConnectionFactory
@@ -17,12 +19,14 @@ if int(os.getenv('NORM_LOG_QUERIES', 0)):
     enable_logging = True
 
 
-__all__ = ['SELECT',
-           'UPDATE',
-           'DELETE',
-           'INSERT',
-           'WITH',
-           'RowsProxy',
-           'ConnectionProxy',
-           'ConnectionFactory',
-           'CursorProxy']
+__all__ = [SELECT,
+           UPDATE,
+           DELETE,
+           INSERT,
+           WITH,
+           EXISTS,
+           NOT_EXISTS,
+           RowsProxy,
+           ConnectionProxy,
+           ConnectionFactory,
+           CursorProxy]
