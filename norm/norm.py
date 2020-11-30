@@ -1,26 +1,31 @@
 from .cached_property import cached_property
 
-QUERY_TYPE = b'qt'
-COLUMN = b'c'
-FROM = b'f'
-WHERE = b'w'
-HAVING = b'h'
-GROUP_BY = b'gb'
-ORDER_BY = b'ob'
-TOP = b'top'
-LIMIT = b'l'
-OFFSET = b'os'
-EXTRA = b'ex'
-TABLE = b't'
-SET = b's'
-RETURNING = b'r'
-DISTINCT_ON = b'do'
-JOIN_LATERAL = b'jl'
+QUERY_TYPE = 'qt'
+COLUMN = 'c'
+FROM = 'f'
+WHERE = 'w'
+HAVING = 'h'
+GROUP_BY = 'gb'
+ORDER_BY = 'ob'
+TOP = 'top'
+LIMIT = 'l'
+OFFSET = 'os'
+EXTRA = 'ex'
+TABLE = 't'
+SET = 's'
+RETURNING = 'r'
+DISTINCT_ON = 'do'
+JOIN_LATERAL = 'jl'
 
-SELECT_QT = b's'
-UPDATE_QT = b'u'
-DELETE_QT = b'd'
-INSERT_QT = b'i'
+SELECT_QT = 's'
+UPDATE_QT = 'u'
+DELETE_QT = 'd'
+INSERT_QT = 'i'
+
+INNER_JOIN = 'INNER_JOIN'
+LEFT_JOIN = 'LEFT_JOIN'
+RIGHT_JOIN = 'RIGHT_JOIN'
+FULL_JOIN = 'FULL_JOIN'
 
 SEP = '\n       '
 WHERE_SEP = ' AND\n       '
@@ -302,9 +307,20 @@ class _SELECT_UPDATE(Query):
             s.chain.append((FROM, (stmt, False, None, None)))
         return s
 
-    def JOIN(self, stmt, ON=None, USING=None, outer=False):
+    def JOIN(self,
+             stmt,
+             ON=None,
+             USING=None,
+             join_type=INNER_JOIN,
+             outer=False):
         if outer:
+            join_type = LEFT_JOIN
+        if join_type == LEFT_JOIN:
             keyword = 'LEFT JOIN'
+        elif join_type == RIGHT_JOIN:
+            keyword = 'RIGHT JOIN'
+        elif join_type == FULL_JOIN:
+            keyword = 'FULL JOIN'
         else:
             keyword = 'JOIN'
         if ON is not None and USING is not None:
@@ -323,7 +339,13 @@ class _SELECT_UPDATE(Query):
         return s
 
     def LEFTJOIN(self, *args, **kw):
-        return self.JOIN(*args, outer=True, **kw)
+        return self.JOIN(*args, join_type=LEFT_JOIN, **kw)
+
+    def RIGHTJOIN(self, *args, **kw):
+        return self.JOIN(*args, join_type=RIGHT_JOIN, **kw)
+
+    def FULLJOIN(self, *args, **kw):
+        return self.JOIN(*args, join_type=FULL_JOIN, **kw)
 
     def RETURNING(self, *args):
         s = self.child()

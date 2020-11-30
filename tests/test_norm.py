@@ -88,7 +88,7 @@ def test_simple_inner_join_select():
     assert s.binds == {}
 
 
-simple_outer_join_expected = """\
+simple_left_join_expected = """\
 SELECT tbl1.column1 AS col1,
        tbl2.column2 AS col2,
        tbl2.column3 AS col3
@@ -98,7 +98,7 @@ SELECT tbl1.column1 AS col1,
  WHERE tbl1.col2 = 'testval';"""
 
 
-def test_simple_outer_join_select():
+def test_simple_left_join_select():
     s = (SELECT("tbl1.column1 AS col1")
          .FROM("table1 AS tbl1")
          .LEFTJOIN("table2 AS tbl2", ON='tbl1.tid = tbl2.tid')
@@ -106,7 +106,51 @@ def test_simple_outer_join_select():
                  "tbl2.column3 AS col3")
          .WHERE("tbl1.col2 = 'testval'"))
 
-    assert s.query == simple_outer_join_expected
+    assert s.query == simple_left_join_expected
+    assert s.binds == {}
+
+
+simple_right_join_expected = """\
+SELECT tbl1.column1 AS col1,
+       tbl2.column2 AS col2,
+       tbl2.column3 AS col3
+  FROM table1 AS tbl1
+  RIGHT JOIN table2 AS tbl2
+       ON tbl1.tid = tbl2.tid
+ WHERE tbl1.col2 = 'testval';"""
+
+
+def test_simple_right_join_select():
+    s = (SELECT("tbl1.column1 AS col1")
+         .FROM("table1 AS tbl1")
+         .RIGHTJOIN("table2 AS tbl2", ON='tbl1.tid = tbl2.tid')
+         .SELECT("tbl2.column2 AS col2",
+                 "tbl2.column3 AS col3")
+         .WHERE("tbl1.col2 = 'testval'"))
+
+    assert s.query == simple_right_join_expected
+    assert s.binds == {}
+
+
+simple_full_join_expected = """\
+SELECT tbl1.column1 AS col1,
+       tbl2.column2 AS col2,
+       tbl2.column3 AS col3
+  FROM table1 AS tbl1
+  FULL JOIN table2 AS tbl2
+       ON tbl1.tid = tbl2.tid
+ WHERE tbl1.col2 = 'testval';"""
+
+
+def test_simple_full_join_select():
+    s = (SELECT("tbl1.column1 AS col1")
+         .FROM("table1 AS tbl1")
+         .FULLJOIN("table2 AS tbl2", ON='tbl1.tid = tbl2.tid')
+         .SELECT("tbl2.column2 AS col2",
+                 "tbl2.column3 AS col3")
+         .WHERE("tbl1.col2 = 'testval'"))
+
+    assert s.query == simple_full_join_expected
     assert s.binds == {}
 
 
