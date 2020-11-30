@@ -37,6 +37,10 @@ INSERT_COLUMNS_SEP = ',\n   '
 INSERT_VALUES_SEP = ',\n          '
 
 
+class _default:
+    pass
+
+
 class NormAsIs:
     def __init__(self, value):
         self.value = value
@@ -221,9 +225,10 @@ class Query:
 
     @property
     def binds(self):
+        isasis = NormAsIs.isasis
         operative_binds = {}
         for key, value in self.bind_items:
-            if NormAsIs.isasis(value):
+            if isasis(value):
                 operative_binds.pop(key, None)
                 continue
             operative_binds[key] = value
@@ -252,6 +257,8 @@ class Query:
 
     @property
     def query(self):
+        isasis = NormAsIs.isasis
+
         if self._query is None:
             self._query = compile(self.build_chain(), self.query_type)
         query = self._query
@@ -261,7 +268,7 @@ class Query:
             final_binds[key] = value
         for key in sorted(final_binds.keys(), key=len, reverse=True):
             value = final_binds[key]
-            if NormAsIs.isasis(value):
+            if isasis(value):
                 query = query.replace(self.bnd(key), value.value)
         return query
 
@@ -311,18 +318,29 @@ class _SELECT_UPDATE(Query):
              stmt,
              ON=None,
              USING=None,
-             join_type=INNER_JOIN,
-             outer=False):
-        if outer:
-            join_type = LEFT_JOIN
-        if join_type == LEFT_JOIN:
+             outer=_default,
+             join_type=INNER_JOIN):
+
+        if outer is not _default:
+            import warnings
+            warnings.warn(
+                'JOIN will stop accepting outer as an argument soon, '
+                'use the named methods (such as .LEFTJOIN) instead')
+            if outer:
+                join_type = LEFT_JOIN
+            else:
+                join_type = INNER_JOIN
+
+        if join_type == INNER_JOIN:
+            keyword = 'JOIN'
+        elif join_type == LEFT_JOIN:
             keyword = 'LEFT JOIN'
         elif join_type == RIGHT_JOIN:
             keyword = 'RIGHT JOIN'
         elif join_type == FULL_JOIN:
             keyword = 'FULL JOIN'
         else:
-            keyword = 'JOIN'
+            raise BogusQuery(f"Unknown join type {join_type!r}")
         if ON is not None and USING is not None:
             raise BogusQuery("You can't specify both ON and USING.")
         elif ON is not None:
@@ -470,10 +488,6 @@ class DELETE(_SELECT_UPDATE):
             self.chain.append((TABLE, table))
 
 
-class _default:
-    pass
-
-
 class INSERT:
     bind_prefix = '%('
     bind_postfix = ')s'
@@ -504,6 +518,7 @@ class INSERT:
 
     @property
     def binds(self):
+        isasis = NormAsIs.isasis
         binds = {}
         if self.statement:
             binds.update(self.statement.binds)
@@ -520,10 +535,10 @@ class INSERT:
                 key = f'{col_name}_{index}'
 
                 if col_name in d:
-                    if not NormAsIs.isasis(d[col_name]):
+                    if not isasis(d[col_name]):
                         binds[key] = d[col_name]
                 else:
-                    if not NormAsIs.isasis(self.default):
+                    if not isasis(self.default):
                         binds[key] = self.default
 
         return binds
@@ -559,6 +574,7 @@ class INSERT:
         return f'{self.bind_prefix}{col_name}_{index}{self.bind_postfix}'
 
     def _query(self, data):
+        isasis = NormAsIs.isasis
         q = 'INSERT INTO %s ' % self.table
 
         if self.columns:
@@ -580,7 +596,7 @@ class INSERT:
                 last_col_ix = len(self.columns) - 1
                 for ix, col_name in enumerate(self.columns):
                     col_val = d.get(col_name, self.default)
-                    if NormAsIs.isasis(col_val):
+                    if isasis(col_val):
                         q += col_val.value
                     else:
                         q += self._bind_param_name(col_name, index)

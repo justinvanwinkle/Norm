@@ -9,6 +9,7 @@ from norm.norm_psycopg2 import PG_ConnectionFactory
 from norm.norm_psycopg2 import PG_SELECT as SELECT
 from norm.norm_psycopg2 import PG_INSERT as INSERT
 
+_loops = 50000
 
 metadata = MetaData()
 users = Table(
@@ -119,7 +120,7 @@ def raw_bench():
 
 def time_it(f, last=None):
     start = monotonic()
-    for x in range(10000):
+    for x in range(_loops):
         query = f()
 
     elapsed = monotonic() - start
