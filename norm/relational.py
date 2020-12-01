@@ -50,6 +50,8 @@ row = run_query(user_high_scores_q)[0]
 print(row.is_bill())  # fine, prints True or False
 print(row.rankings_url())  # AttributeError, doesn't satisfy any methods
 
+row = run_query(user_losses_q)[0]
+row.rankings_url()  # AttributeError
 
 @row_method('users.user_id = scores.user_id',
             user_id='users.user_id',
