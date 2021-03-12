@@ -348,7 +348,10 @@ class _SELECT_UPDATE(Query):
             criteria = ON
         elif USING is not None:
             op = 'USING'
-            criteria = USING
+            if isinstance(USING, str):
+                criteria = f'({USING})'
+            else:
+                criteria = '(' + ', '.join(USING) + ')'
         else:
             raise BogusQuery('No join criteria specified.')
 

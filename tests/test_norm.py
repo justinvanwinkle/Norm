@@ -88,6 +88,50 @@ def test_simple_inner_join_select():
     assert s.binds == {}
 
 
+simple_inner_using_join_select_expected = """\
+SELECT tbl1.column1 AS col1,
+       tbl2.column2 AS col2,
+       tbl2.column3 AS col3
+  FROM table1 AS tbl1
+  JOIN table2 AS tbl2
+       USING (tubs)
+ WHERE tbl1.col2 = 'testval';"""
+
+
+def test_simple_inner_using_join_select():
+    s = (SELECT("tbl1.column1 AS col1")
+         .FROM("table1 AS tbl1")
+         .JOIN("table2 AS tbl2", USING='tubs')
+         .SELECT("tbl2.column2 AS col2",
+                 "tbl2.column3 AS col3")
+         .WHERE("tbl1.col2 = 'testval'"))
+
+    assert s.query == simple_inner_using_join_select_expected
+    assert s.binds == {}
+
+
+simple_inner_using_multi_join_select_expected = """\
+SELECT tbl1.column1 AS col1,
+       tbl2.column2 AS col2,
+       tbl2.column3 AS col3
+  FROM table1 AS tbl1
+  JOIN table2 AS tbl2
+       USING (tubs, bubs)
+ WHERE tbl1.col2 = 'testval';"""
+
+
+def test_simple_inner_using_multi_join_select():
+    s = (SELECT("tbl1.column1 AS col1")
+         .FROM("table1 AS tbl1")
+         .JOIN("table2 AS tbl2", USING=('tubs', 'bubs'))
+         .SELECT("tbl2.column2 AS col2",
+                 "tbl2.column3 AS col3")
+         .WHERE("tbl1.col2 = 'testval'"))
+
+    assert s.query == simple_inner_using_multi_join_select_expected
+    assert s.binds == {}
+
+
 simple_left_join_expected = """\
 SELECT tbl1.column1 AS col1,
        tbl2.column2 AS col2,
@@ -442,7 +486,7 @@ def test_generative_query():
         "SELECT tbl1.column1 AS col1",
         "  FROM table1 AS tbl1",
         "  JOIN table2 AS tbl2",
-        "       USING somecol",
+        "       USING (somecol)",
         " WHERE tbl1.col2 = 'testval' AND",
         "       tbl1.col3 = 'otherval' AND",
         "       tbl1.col4 = 'otherother';"])
@@ -451,7 +495,7 @@ def test_generative_query():
         "SELECT tbl1.column1 AS col1",
         "  FROM table1 AS tbl1",
         "  JOIN table2 AS tbl2",
-        "       USING somecol",
+        "       USING (somecol)",
         "  JOIN table3 AS tbl3",
         "       ON tbl3.colx = tbl2.coly",
         " WHERE tbl1.col2 = 'testval' AND",
@@ -463,7 +507,7 @@ def test_generative_query():
         "       tbl3.whatever AS whatever",
         "  FROM table1 AS tbl1",
         "  JOIN table2 AS tbl2",
-        "       USING somecol",
+        "       USING (somecol)",
         "  JOIN table3 AS tbl3",
         "       ON tbl3.colx = tbl2.coly",
         " WHERE tbl1.col2 = 'testval' AND",
