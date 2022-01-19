@@ -9,12 +9,12 @@ license = "MIT"
 python = "^3.7"
 
 [tool.poetry.dev-dependencies]
-pytest-flake8 = "*"
 psycopg2-binary = "^2.8.6"
 ipython = "*"
 pytest = "*"
 sqlalchemy = "*"
 tox = "^3.23.0"
+pytest-flake8-v2 = "*"
 
 [build-system]
 requires = ["poetry>=0.12"]

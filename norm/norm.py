@@ -654,10 +654,43 @@ class WITH(Query):
         return d
 
 
+class UNION(Query):
+    def __init__(self, *args):
+        super().__init__()
+
+        self.op = 'UNION'
+        self.queries = list(args)
+
+    def append(self, query):
+        return self.queries.append(query)
+
+    @property
+    def query(self):
+        parts = []
+        for query in self.queries:
+            parts.append(query.query[:-1])  # TODO: HACK!
+        return f'\n{self.op}\n'.join(parts) + ';'
+
+    @property
+    def binds(self):
+        d = dict()
+        for query in self.queries:
+            d.update(query.binds)
+        return d
+
+
+class UNION_ALL(UNION):
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.op = 'UNION ALL'
+
+
 __all__ = [Query,
            SELECT,
            UPDATE,
            DELETE,
            INSERT,
            WITH,
+           UNION,
+           UNION_ALL,
            BogusQuery]

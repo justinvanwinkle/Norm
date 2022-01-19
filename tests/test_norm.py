@@ -4,6 +4,8 @@ from norm import SELECT
 from norm import UPDATE
 from norm import DELETE
 from norm import INSERT
+from norm import UNION
+from norm import UNION_ALL
 from norm import WITH
 from norm import EXISTS
 from norm import NOT_EXISTS
@@ -820,3 +822,80 @@ def test_loggable_query():
          .RETURNING('test', 'test1'))
 
     assert u._loggable_query == loggable_query_test
+
+
+union_query = """\
+SELECT foo,
+       bub,
+       derp
+  FROM my_fake_table
+ WHERE foo = %(foo_bind_0)s;"""
+
+
+def test_union():
+    s = (SELECT('foo', 'bub', 'derp')
+         .FROM('my_fake_table')
+         .WHERE(foo=1))
+    u = UNION()
+    u.append(s)
+
+    assert u.query == union_query
+    assert u.binds == {'foo_bind_0': 1}
+
+
+union_multi_query = """\
+SELECT foo,
+       bub,
+       derp
+  FROM my_fake_table
+ WHERE foo = %(foo_bind_0)s
+UNION
+SELECT foo,
+       bub,
+       derp
+  FROM my_fake_table
+ WHERE foo = %(foo_bind_0)s;"""
+
+
+def test_union_multi():
+    s1 = (SELECT('foo', 'bub', 'derp')
+          .FROM('my_fake_table')
+          .WHERE(foo=1))
+    s2 = (SELECT('foo', 'bub', 'derp')
+          .FROM('my_fake_table')
+          .WHERE(foo=2))
+    u = UNION()
+    u.append(s1)
+    u.append(s2)
+
+    assert u.query == union_multi_query
+    assert u.binds == {'foo_bind_0': 2}
+
+
+union_all_multi_query = """\
+SELECT foo,
+       bub,
+       derp
+  FROM my_fake_table
+ WHERE foo = %(foo_bind_0)s
+UNION ALL
+SELECT foo,
+       bub,
+       derp
+  FROM my_fake_table
+ WHERE foo = %(foo_bind_0)s;"""
+
+
+def test_union_all_multi():
+    s1 = (SELECT('foo', 'bub', 'derp')
+          .FROM('my_fake_table')
+          .WHERE(foo=1))
+    s2 = (SELECT('foo', 'bub', 'derp')
+          .FROM('my_fake_table')
+          .WHERE(foo=2))
+    u = UNION_ALL()
+    u.append(s1)
+    u.append(s2)
+
+    assert u.query == union_all_multi_query
+    assert u.binds == {'foo_bind_0': 2}

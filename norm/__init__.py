@@ -4,6 +4,8 @@ from .norm import SELECT
 from .norm import UPDATE
 from .norm import INSERT
 from .norm import DELETE
+from .norm import UNION
+from .norm import UNION_ALL
 from .norm import WITH
 from .norm import EXISTS
 from .norm import NOT_EXISTS
@@ -24,6 +26,8 @@ __all__ = [SELECT,
            DELETE,
            INSERT,
            WITH,
+           UNION,
+           UNION_ALL,
            EXISTS,
            NOT_EXISTS,
            RowsProxy,
